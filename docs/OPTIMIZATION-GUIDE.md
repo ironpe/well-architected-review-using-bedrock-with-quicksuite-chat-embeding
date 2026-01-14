@@ -5,7 +5,7 @@
 2. [환경 변수 설정](#환경-변수-설정)
 3. [성능 분석](#성능-분석)
 4. [모델별 최적화](#모델별-최적화)
-5. [롤백 방법](#롤백-방법)
+5. [설정 변경 방법](#설정-변경-방법)
 
 ---
 
@@ -170,11 +170,9 @@ const lambdaEnv = {
 
 ---
 
-## 롤백 방법
+## 설정 변경 방법
 
-### 빠른 롤백 (30초)
-
-**AWS Console**:
+### AWS Console (30초)
 1. Lambda 콘솔 접속
 2. `ArchReview-Minimal-ReviewExecutionFn...` 선택
 3. Configuration → Environment variables
@@ -202,30 +200,21 @@ aws lambda update-function-configuration \
 
 ### CDK 재배포 (2분)
 
-```typescript
-// infrastructure/lib/minimal-stack.ts
-const lambdaEnv = {
-  // ...
-  INCLUDE_PILLAR_IMAGES: 'true',             // 롤백
-  GENERATE_EXECUTIVE_SUMMARY_SYNC: 'false',  // 롤백
-};
-```
-
 ```bash
 cd infrastructure
 cdk deploy --all
 ```
 
-### 부분 롤백
+### 부분 설정 변경
 
-**Pillar 이미지만 복원**:
+**Pillar 이미지 포함으로 변경**:
 ```typescript
 INCLUDE_PILLAR_IMAGES: 'true',              // 롤백
 GENERATE_EXECUTIVE_SUMMARY_SYNC: 'true',   // 유지
 ```
 - 효과: 품질 향상, +20초, +$0.450 (Claude)
 
-**Executive Summary만 제거**:
+**Executive Summary 비활성화**:
 ```typescript
 INCLUDE_PILLAR_IMAGES: 'false',            // 유지
 GENERATE_EXECUTIVE_SUMMARY_SYNC: 'false',  // 롤백
@@ -260,7 +249,7 @@ aws logs filter-log-events \
 ❌ "Generating comprehensive summary" (없음)
 ```
 
-**롤백 시**:
+**품질 우선 적용 시**:
 ```
 ✅ "Analyzing page X with [selected-model]..."
 ✅ "[Pillar] Using vision model with X images"
@@ -335,7 +324,7 @@ const cacheKey = `cache/${documentId}/page-${pageNum}-dpi-${dpi}.png`;
 - 💰 **비용**: 저렴 ($0.144-$0.228)
 - 🎯 **품질**: 우수 (선택한 모델만 사용)
 
-### 롤백 (이전)
+### 품질 우선 설정
 - ⏱️ **실행 시간**: 느림 (161초)
 - 💰 **비용**: 비쌈 ($0.180-$0.651)
 - 🎯 **품질**: 최고 (이중 분석)
@@ -347,7 +336,7 @@ const cacheKey = `cache/${documentId}/page-${pageNum}-dpi-${dpi}.png`;
 - 비용 효율적
 - 충분한 품질
 
-**복잡한 문서**: 부분 롤백 고려
+**복잡한 문서**: 품질 우선 설정 고려
 - Pillar 이미지 포함 (`INCLUDE_PILLAR_IMAGES=true`)
 - 품질 향상
 - +20초, +$0.450 (Claude)
@@ -380,7 +369,7 @@ aws lambda update-function-configuration \
 
 **해결**:
 ```bash
-# Pillar 이미지 포함으로 롤백
+# Pillar 이미지 포함으로 변경
 INCLUDE_PILLAR_IMAGES=true
 ```
 
@@ -421,4 +410,4 @@ GENERATE_EXECUTIVE_SUMMARY_SYNC=true
 - Nova: 77초, $0.144 (52% 단축)
 - Claude: 101초, $0.228 (65% 비용 절감)
 
-**롤백**: 환경 변수로 즉시 가능 (30초)
+**설정 변경**: 환경 변수로 즉시 가능 (30초)

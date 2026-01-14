@@ -192,10 +192,10 @@ flowchart TB
 ### 사전 요구사항
 - Node.js 18 이상
 - Python 3.11 이상
-- AWS CLI 설정
+- AWS CLI 설정 완료
 - AWS CDK CLI: `npm install -g aws-cdk`
 
-### 설치
+### 설치 및 환경 설정
 
 ```bash
 # 1. 의존성 설치
@@ -203,48 +203,63 @@ npm install
 cd backend && npm install
 cd ../frontend && npm install
 cd ../infrastructure && npm install
+cd ..
 
-# 2. PyMuPDF Layer 빌드
-cd ../layers/pymupdf
-chmod +x build-layer.sh
-./build-layer.sh
-
-# 3. Backend Lambda 패키징
-cd ../../backend
-npm run build
-./package-lambda.sh
+# 2. 환경 변수 파일 생성
+cp frontend/.env.example frontend/.env
+cp backend/.env.example backend/.env
+cp infrastructure/.env.example infrastructure/.env
 ```
 
-### 환경 변수 설정
+### Frontend 개발 서버 실행
 
 ```bash
-# Frontend
 cd frontend
-cp .env.example .env
-# VITE_API_URL, VITE_COGNITO_* 설정
-
-# Infrastructure 배포 후 자동 업데이트
-cd ..
-./update-env-from-cdk.sh
+npm run dev
+# http://localhost:3000
 ```
 
-### 배포
+> Backend는 AWS Lambda로 실행되므로 로컬 개발 서버가 필요하지 않습니다.  
+> 배포 후 `./scripts/update-env-from-cdk.sh`를 실행하면 환경 변수가 자동 업데이트됩니다.
 
+---
+
+## 배포 가이드
+
+### 1. PyMuPDF Layer 빌드
+```bash
+cd layers/pymupdf
+chmod +x build-layer.sh
+./build-layer.sh
+cd ../..
+```
+
+### 2. Backend Lambda 패키징
+```bash
+cd backend
+npm run build
+./package-lambda.sh
+cd ..
+```
+
+### 3. Infrastructure 배포
 ```bash
 cd infrastructure
 cdk bootstrap  # 최초 1회만
 cdk deploy --all
+cd ..
 ```
 
-### 개발 서버 실행
-
+### 4. Frontend 환경 변수 업데이트
 ```bash
-# Frontend
-cd frontend
-npm run dev
-# http://localhost:3000
+./scripts/update-env-from-cdk.sh
+```
 
-# Backend는 Lambda로 실행 (로컬 개발 불필요)
+### 5. Frontend 빌드 (프로덕션)
+```bash
+cd frontend
+npm run build
+# dist/ 폴더를 S3 또는 CloudFront에 배포
 ```
 
 ---
@@ -316,33 +331,6 @@ chmod +x build-layer.sh
 5. Node.js Lambda가 Claude Vision 분석
 
 ---
-
-## 배포 가이드
-
-### 1. Backend 빌드
-```bash
-cd backend
-npm run build
-./package-lambda.sh
-```
-
-### 2. Infrastructure 배포
-```bash
-cd infrastructure
-cdk deploy --all
-```
-
-### 3. Frontend 환경 변수 업데이트
-```bash
-./update-env-from-cdk.sh
-```
-
-### 4. Frontend 빌드 (프로덕션)
-```bash
-cd frontend
-npm run build
-# dist/ 폴더를 S3 또는 CloudFront에 배포
-```
 
 ---
 
@@ -563,7 +551,7 @@ GENERATE_EXECUTIVE_SUMMARY_SYNC: 'true'    // Executive Summary 생성
 - Nova 선택 시: 161초 → 77초 (52% 단축)
 - Claude 선택 시: 106초 → 101초 (5% 단축, 69% 비용 절감)
 
-**상세 가이드**: `OPTIMIZATION-GUIDE.md` 참조
+**상세 가이드**: `docs/OPTIMIZATION-GUIDE.md` 참조
 
 ### 최적화 설정 방법
 
