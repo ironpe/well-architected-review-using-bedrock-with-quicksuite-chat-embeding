@@ -1,0 +1,29 @@
+{
+  "name": "architecture-review-system",
+  "version": "1.0.0",
+  "description": "AWS Well-Architected Framework based Architecture Review System",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend",
+    "infrastructure"
+  ],
+  "scripts": {
+    "install:all": "npm install && npm install --workspace=frontend && npm install --workspace=backend && npm install --workspace=infrastructure",
+    "build:frontend": "npm run build --workspace=frontend",
+    "build:backend": "npm run build --workspace=backend",
+    "build:infra": "npm run build --workspace=infrastructure",
+    "build:all": "npm run build:backend && npm run build:frontend && npm run build:infra",
+    "deploy": "npm run deploy --workspace=infrastructure",
+    "test": "npm run test --workspace=frontend && npm run test --workspace=backend"
+  },
+  "keywords": [
+    "aws",
+    "well-architected",
+    "architecture-review",
+    "bedrock",
+    "q-business"
+  ],
+  "author": "",
+  "license": "MIT"
+}
