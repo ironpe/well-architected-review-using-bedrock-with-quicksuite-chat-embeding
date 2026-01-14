@@ -47,7 +47,6 @@ cat infrastructure/.env.agentcore
 | Client ID | `your-client-id` |
 | Client Secret | `your-client-secret` |
 | Token URL | `https://your-cognito-domain.auth.us-east-1.amazoncognito.com/oauth2/token` |
-| Scopes | `your-gateway-name/invoke` |
 
 > ⚠️ 실제 값은 `infrastructure/.env.agentcore` 파일에서 확인하세요.
 
@@ -91,7 +90,6 @@ cat infrastructure/.env.agentcore
 | Client ID | `AGENTCORE_CLIENT_ID` |
 | Client Secret | `AGENTCORE_CLIENT_SECRET` |
 | Token URL | `COGNITO_TOKEN_URL` |
-| Scopes | `<GATEWAY_NAME>/invoke` |
 
 ### Step 6: 저장 및 확인
 
@@ -140,7 +138,6 @@ QuickSuite Chat Agent에서 다음과 같이 테스트:
 
 1. Client ID/Secret이 올바른지 확인
 2. Token URL이 정확한지 확인
-3. Scopes가 `<gateway-name>/invoke` 형식인지 확인
 
 ```bash
 # 토큰 발급 테스트
@@ -148,8 +145,7 @@ curl -X POST "$COGNITO_TOKEN_URL" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=client_credentials" \
   -d "client_id=$AGENTCORE_CLIENT_ID" \
-  -d "client_secret=$AGENTCORE_CLIENT_SECRET" \
-  -d "scope=$GATEWAY_NAME/invoke"
+  -d "client_secret=$AGENTCORE_CLIENT_SECRET"
 ```
 
 ### 연결 오류 (Connection Failed)
@@ -211,7 +207,6 @@ aws logs tail /aws/lambda/<MCP_LAMBDA_FUNCTION_NAME> --follow
 │                  Cognito User Pool                              │
 │                                                                 │
 │  Token URL: https://<cognito-domain>.auth.<region>...           │
-│  Scopes: <gateway-name>/invoke                                  │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               │ JWT Token

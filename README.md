@@ -427,7 +427,6 @@ QuickSuite 콘솔에서 수동으로 MCP Action을 등록합니다.
 | Client ID | `infrastructure/.env.agentcore`의 `AGENTCORE_CLIENT_ID` 값 |
 | Client Secret | `infrastructure/.env.agentcore`의 `AGENTCORE_CLIENT_SECRET` 값 |
 | Token URL | `infrastructure/.env.agentcore`의 `COGNITO_TOKEN_URL` 값 |
-| Scopes | `{GATEWAY_NAME}/invoke` |
 
 **상세 가이드**: `docs/QUICKSUITE-MCP-REGISTRATION.md` 참조
 
