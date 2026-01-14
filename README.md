@@ -463,22 +463,13 @@ QuickSuite 콘솔에서 수동으로 MCP Action을 등록합니다.
 
 #### 7단계: 프론트엔드 Chat Agent 임베딩 설정
 
-Chat Agent를 프론트엔드에 임베딩하려면 환경 변수를 설정합니다.
+Chat Agent를 프론트엔드에 임베딩하려면 Lambda 환경 변수를 설정합니다.
 
 1. **Agent 임베딩 URL 복사**:
    - Chat agents → 생성한 Agent의 **⋮** 클릭 → **Embed**
    - `src=` 뒤의 URL 복사
 
-2. **Backend 환경 변수 설정** (`backend/.env`):
-   ```bash
-   QUICKSIGHT_ACCOUNT_ID=your-account-id
-   QUICKSIGHT_AGENT_ARN=arn:aws:quicksight:us-east-1:YOUR_ACCOUNT_ID:agent/YOUR_AGENT_ID
-   QUICKSIGHT_NAMESPACE=default
-   QUICKSIGHT_USER_NAME=your-quicksight-user
-   QUICKSIGHT_EMBED_URL=https://us-east-1.quicksight.aws.amazon.com/sn/embed/share/accounts/YOUR_ACCOUNT_ID/chatagents/YOUR_AGENT_ID?directory_alias=YOUR_ACCOUNT_NAME
-   ```
-
-3. **Lambda 환경 변수 업데이트**:
+2. **Lambda 환경 변수 업데이트**:
    ```bash
    # QuickSight Embed Handler Lambda 함수 이름 확인
    QUICKSIGHT_LAMBDA=$(aws lambda list-functions \
@@ -497,7 +488,7 @@ Chat Agent를 프론트엔드에 임베딩하려면 환경 변수를 설정합�
      --region us-east-1
    ```
 
-4. **프론트엔드에서 Chat Widget 사용**:
+3. **프론트엔드에서 Chat Widget 사용**:
    - 우측 하단 채팅 버튼 클릭
    - QuickSuite Chat Agent가 임베딩되어 표시됨
 
