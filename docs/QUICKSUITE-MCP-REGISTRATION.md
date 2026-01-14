@@ -28,26 +28,28 @@ cat infrastructure/.env.agentcore
 
 ---
 
-## 📝 현재 설정 정보
+## 📝 설정 정보 예시
 
 ### 생성된 리소스
 
 | 항목 | 값 |
 |------|-----|
-| Gateway Name | `arch-review-waf-gateway` |
-| Gateway ID | `arch-review-waf-gateway-zcpecslc5y` |
-| Gateway URL | `https://arch-review-waf-gateway-zcpecslc5y.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp` |
-| Target Name | `arch-review-waf-tools` |
-| Target ID | `PSGUTMLUAP` |
+| Gateway Name | `your-gateway-name` |
+| Gateway ID | `your-gateway-id` |
+| Gateway URL | `https://your-gateway-id.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp` |
+| Target Name | `your-target-name` |
+| Target ID | `YOUR_TARGET_ID` |
 
 ### 인증 정보
 
 | 항목 | 값 |
 |------|-----|
-| Client ID | `7cl0id2jrgmn7p8nrp8r62oskp` |
-| Client Secret | `1vud7s0qk25o7ocgo1kkbuf2u17q14jsqheou11svkb1v8vphi1f` |
-| Token URL | `https://arch-review-agentcore-hszsi7yho.auth.us-east-1.amazoncognito.com/oauth2/token` |
-| Scopes | `arch-review-waf-gateway/invoke` |
+| Client ID | `your-client-id` |
+| Client Secret | `your-client-secret` |
+| Token URL | `https://your-cognito-domain.auth.us-east-1.amazoncognito.com/oauth2/token` |
+| Scopes | `your-gateway-name/invoke` |
+
+> ⚠️ 실제 값은 `infrastructure/.env.agentcore` 파일에서 확인하세요.
 
 ---
 
@@ -76,20 +78,20 @@ cat infrastructure/.env.agentcore
 
 | 필드 | 값 |
 |------|-----|
-| URL | `https://arch-review-waf-gateway-zcpecslc5y.gateway.bedrock-agentcore.us-east-1.amazonaws.com/mcp` |
+| URL | `https://<GATEWAY_ID>.gateway.bedrock-agentcore.<REGION>.amazonaws.com/mcp` |
 
 ### Step 5: 인증 설정
 
 1. **Authentication type** 선택: `Service authentication (2LO)`
 
-2. 다음 값들을 입력:
+2. 다음 값들을 입력 (`infrastructure/.env.agentcore`에서 확인):
 
-| 필드 | 값 |
+| 필드 | 환경변수 |
 |------|-----|
-| Client ID | `7cl0id2jrgmn7p8nrp8r62oskp` |
-| Client Secret | `1vud7s0qk25o7ocgo1kkbuf2u17q14jsqheou11svkb1v8vphi1f` |
-| Token URL | `https://arch-review-agentcore-hszsi7yho.auth.us-east-1.amazoncognito.com/oauth2/token` |
-| Scopes | `arch-review-waf-gateway/invoke` |
+| Client ID | `AGENTCORE_CLIENT_ID` |
+| Client Secret | `AGENTCORE_CLIENT_SECRET` |
+| Token URL | `COGNITO_TOKEN_URL` |
+| Scopes | `<GATEWAY_NAME>/invoke` |
 
 ### Step 6: 저장 및 확인
 
@@ -138,16 +140,16 @@ QuickSuite Chat Agent에서 다음과 같이 테스트:
 
 1. Client ID/Secret이 올바른지 확인
 2. Token URL이 정확한지 확인
-3. Scopes가 `arch-review-waf-gateway/invoke` 형식인지 확인
+3. Scopes가 `<gateway-name>/invoke` 형식인지 확인
 
 ```bash
 # 토큰 발급 테스트
-curl -X POST "https://arch-review-agentcore-hszsi7yho.auth.us-east-1.amazoncognito.com/oauth2/token" \
+curl -X POST "$COGNITO_TOKEN_URL" \
   -H "Content-Type: application/x-www-form-urlencoded" \
   -d "grant_type=client_credentials" \
-  -d "client_id=7cl0id2jrgmn7p8nrp8r62oskp" \
-  -d "client_secret=1vud7s0qk25o7ocgo1kkbuf2u17q14jsqheou11svkb1v8vphi1f" \
-  -d "scope=arch-review-waf-gateway/invoke"
+  -d "client_id=$AGENTCORE_CLIENT_ID" \
+  -d "client_secret=$AGENTCORE_CLIENT_SECRET" \
+  -d "scope=$GATEWAY_NAME/invoke"
 ```
 
 ### 연결 오류 (Connection Failed)
@@ -158,7 +160,7 @@ curl -X POST "https://arch-review-agentcore-hszsi7yho.auth.us-east-1.amazoncogni
 ```bash
 # Gateway 상태 확인
 aws bedrock-agentcore-control get-gateway \
-  --gateway-identifier arch-review-waf-gateway-zcpecslc5y \
+  --gateway-identifier $GATEWAY_ID \
   --region us-east-1
 ```
 
@@ -170,7 +172,7 @@ aws bedrock-agentcore-control get-gateway \
 ```bash
 # Target 목록 확인
 aws bedrock-agentcore-control list-gateway-targets \
-  --gateway-identifier arch-review-waf-gateway-zcpecslc5y \
+  --gateway-identifier $GATEWAY_ID \
   --region us-east-1
 ```
 
@@ -180,7 +182,8 @@ aws bedrock-agentcore-control list-gateway-targets \
 2. DynamoDB 테이블 권한 확인
 
 ```bash
-aws logs tail /aws/lambda/ArchitectureReviewStack-McpServerHandler89A0C9C0-qqJwYOe88Yxw --follow
+# Lambda 함수명은 CDK 배포 후 확인
+aws logs tail /aws/lambda/<MCP_LAMBDA_FUNCTION_NAME> --follow
 ```
 
 ---
@@ -207,8 +210,8 @@ aws logs tail /aws/lambda/ArchitectureReviewStack-McpServerHandler89A0C9C0-qqJwY
 ┌─────────────────────────────────────────────────────────────────┐
 │                  Cognito User Pool                              │
 │                                                                 │
-│  Token URL: https://arch-review-agentcore-hszsi7yho.auth...     │
-│  Scopes: arch-review-waf-gateway/invoke                         │
+│  Token URL: https://<cognito-domain>.auth.<region>...           │
+│  Scopes: <gateway-name>/invoke                                  │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               │ JWT Token
@@ -216,8 +219,8 @@ aws logs tail /aws/lambda/ArchitectureReviewStack-McpServerHandler89A0C9C0-qqJwY
 ┌─────────────────────────────────────────────────────────────────┐
 │                AgentCore Gateway (MCP)                          │
 │                                                                 │
-│  ID: arch-review-waf-gateway-zcpecslc5y                         │
-│  Target: arch-review-waf-tools (PSGUTMLUAP)                     │
+│  ID: <gateway-id>                                               │
+│  Target: <target-name> (<target-id>)                            │
 └─────────────────────────────────────────────────────────────────┘
                               │
                               │ tools/call
@@ -225,8 +228,7 @@ aws logs tail /aws/lambda/ArchitectureReviewStack-McpServerHandler89A0C9C0-qqJwY
 ┌─────────────────────────────────────────────────────────────────┐
 │                   MCP Lambda Function                           │
 │                                                                 │
-│  ARN: arn:aws:lambda:us-east-1:011528259648:function:           │
-│       ArchitectureReviewStack-McpServerHandler89A0C9C0-...      │
+│  ARN: arn:aws:lambda:<region>:<account>:function:...            │
 │  Tools: 8개                                                     │
 └─────────────────────────────────────────────────────────────────┘
                               │
@@ -251,11 +253,10 @@ aws logs tail /aws/lambda/ArchitectureReviewStack-McpServerHandler89A0C9C0-qqJwY
 | `backend/src/mcp-server/lambda.ts` | MCP Lambda 핸들러 |
 | `backend/src/mcp-server/tools.ts` | MCP 도구 정의 |
 | `infrastructure/lib/architecture-review-stack.ts` | CDK 스택 |
-| `infrastructure/.env.agentcore` | 설정 정보 |
+| `infrastructure/.env.agentcore` | 설정 정보 (배포 후 생성) |
 | `scripts/setup-agentcore-cognito.sh` | Cognito 설정 스크립트 |
 | `scripts/setup-agentcore-gateway.sh` | Gateway 설정 스크립트 (AWS CLI 사용) |
 
 ---
 
 **작성일**: 2026-01-14
-**최종 수정**: 2026-01-14 (실제 생성된 리소스 정보로 업데이트)

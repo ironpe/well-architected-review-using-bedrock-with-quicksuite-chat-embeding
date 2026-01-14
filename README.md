@@ -431,6 +431,76 @@ QuickSuite 콘솔에서 수동으로 MCP Action을 등록합니다.
 
 **상세 가이드**: `docs/QUICKSUITE-MCP-REGISTRATION.md` 참조
 
+#### 5단계: QuickSuite Space 생성 및 MCP Action 연결
+
+1. **QuickSight 콘솔** → Spaces → Create space
+2. 다음 정보 입력:
+   - **Space name**: `Architecture Review Space`
+   - **Description**: 아키텍처 검토를 위한 작업 공간
+3. **Knowledge bases** 섹션에서 S3 Knowledge Base 추가 (선택사항):
+   - S3 버킷에 거버넌스 정책 문서가 있는 경우 연결
+4. **Actions** 섹션에서:
+   - 4단계에서 생성한 `Architecture Review Data MCP` 선택
+5. **Create** 클릭
+
+#### 6단계: QuickSuite Chat Agent 생성
+
+1. **QuickSight 콘솔** → Chat agents → Create chat agent
+2. **Skip** 클릭 (템플릿 사용 안함)
+3. 다음 정보 입력:
+   - **Name**: `Architecture Review Agent`
+   - **Description**: 아키텍처 리뷰 에이전트
+   - **Agent identity**: 
+     ```
+     당신은 AWS Well-Architected Framework의 6개 영역(운영 우수성, 보안, 안정성, 성능 효율성, 비용 최적화, 지속가능성)을 기반으로 아키텍처를 검토하는 전문 에이전트입니다.
+     ```
+   - **Persona instructions**: 검토 프로세스 및 출력 형식 정의
+4. **Link spaces** 클릭 → 5단계에서 생성한 Space 선택 → **Link**
+5. **Link actions** 클릭 → `Architecture Review Data MCP` 선택 → **Link**
+6. **Welcome message**: `안녕하세요! 아키텍처 리뷰 에이전트입니다.`
+7. **Launch chat agent** 클릭
+8. **Agent ID 복사** (URL에서 확인: `.../agents/{AGENT_ID}/`)
+
+#### 7단계: 프론트엔드 Chat Agent 임베딩 설정
+
+Chat Agent를 프론트엔드에 임베딩하려면 환경 변수를 설정합니다.
+
+1. **Agent 임베딩 URL 복사**:
+   - Chat agents → 생성한 Agent의 **⋮** 클릭 → **Embed**
+   - `src=` 뒤의 URL 복사
+
+2. **Backend 환경 변수 설정** (`backend/.env`):
+   ```bash
+   QUICKSIGHT_ACCOUNT_ID=your-account-id
+   QUICKSIGHT_AGENT_ARN=arn:aws:quicksight:us-east-1:YOUR_ACCOUNT_ID:agent/YOUR_AGENT_ID
+   QUICKSIGHT_NAMESPACE=default
+   QUICKSIGHT_USER_NAME=your-quicksight-user
+   QUICKSIGHT_EMBED_URL=https://us-east-1.quicksight.aws.amazon.com/sn/embed/share/accounts/YOUR_ACCOUNT_ID/chatagents/YOUR_AGENT_ID?directory_alias=YOUR_ACCOUNT_NAME
+   ```
+
+3. **Lambda 환경 변수 업데이트**:
+   ```bash
+   # QuickSight Embed Handler Lambda 함수 이름 확인
+   QUICKSIGHT_LAMBDA=$(aws lambda list-functions \
+     --query "Functions[?contains(FunctionName, 'QuickSightEmbedHandler')].FunctionName" \
+     --output text --region us-east-1)
+
+   # Lambda 환경 변수 업데이트
+   aws lambda update-function-configuration \
+     --function-name "$QUICKSIGHT_LAMBDA" \
+     --environment "Variables={
+       QUICKSIGHT_ACCOUNT_ID=YOUR_ACCOUNT_ID,
+       QUICKSIGHT_AGENT_ARN=arn:aws:quicksight:us-east-1:YOUR_ACCOUNT_ID:agent/YOUR_AGENT_ID,
+       QUICKSIGHT_NAMESPACE=default,
+       QUICKSIGHT_USER_NAME=YOUR_QUICKSIGHT_USER
+     }" \
+     --region us-east-1
+   ```
+
+4. **프론트엔드에서 Chat Widget 사용**:
+   - 우측 하단 채팅 버튼 클릭
+   - QuickSuite Chat Agent가 임베딩되어 표시됨
+
 ### 설정 확인
 
 ```bash
