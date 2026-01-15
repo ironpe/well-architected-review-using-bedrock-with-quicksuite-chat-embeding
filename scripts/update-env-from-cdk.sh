@@ -17,7 +17,7 @@ if ! command -v aws &> /dev/null; then
 fi
 
 # Get stack name from infrastructure/.env or use default
-STACK_NAME=${STACK_NAME:-"ArchitectureReviewSystem-dev"}
+STACK_NAME=${STACK_NAME:-"ArchReview-Minimal"}
 
 echo "Fetching CloudFormation outputs for stack: $STACK_NAME"
 echo ""

@@ -253,6 +253,13 @@ cd ../..
 ```bash
 cd backend
 npm run build
+./prepare-layer.sh  # Lambda Layer 의존성 설치
+
+# Lambda Layer zip 생성
+cd layer
+zip -r ../lambda-layer/lambda-layer.zip nodejs
+cd ..
+
 ./package-lambda.sh
 cd ..
 ```

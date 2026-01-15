@@ -14,13 +14,13 @@ mkdir -p layer/nodejs
 cp package.json layer/nodejs/
 cp package-lock.json layer/nodejs/ 2>/dev/null || true
 
-# Install production dependencies
+# Install production dependencies only
+# (devDependencies like @aws-sdk, canvas, pdf-to-png-converter are excluded)
 cd layer/nodejs
 npm install --production --no-optional
 
 # Remove unnecessary files
 rm -rf .npm
-rm -rf node_modules/aws-sdk
 
 cd ../..
 
