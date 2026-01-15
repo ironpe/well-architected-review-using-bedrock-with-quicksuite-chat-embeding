@@ -188,7 +188,8 @@ export function DashboardPage() {
                       <Chip 
                         label={getStatusLabel(review.status)} 
                         color={getStatusColor(review.status)} 
-                        size="small" 
+                        size="small"
+                        sx={{ borderRadius: '4px' }}
                       />
                     </Box>
 

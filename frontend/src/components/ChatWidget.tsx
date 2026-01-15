@@ -113,8 +113,12 @@ function ChatWidget({ isOpen, onClose, onWidthChange }: ChatWidgetProps) {
     if (!containerRef.current) return;
 
     try {
-      // Use Agent ID from backend, fallback to hardcoded value
-      const finalAgentId = agentId || 'ef4cec92-6280-4c25-8e9a-c49814b73283';
+      // Agent ID must be provided from backend
+      if (!agentId) {
+        setError('QuickSuite Agent가 설정되지 않았습니다. README의 QuickSuite MCP 연동 섹션을 참조하세요.');
+        return;
+      }
+      const finalAgentId = agentId;
       
       const embeddingContext = await createEmbeddingContext();
 

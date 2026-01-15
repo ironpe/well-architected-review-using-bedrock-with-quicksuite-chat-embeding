@@ -29,44 +29,70 @@ export function UploadPage() {
   const [uploadStep, setUploadStep] = useState('');
   const [success, setSuccess] = useState(false);
   const [error, setError] = useState('');
+  const [isDragOver, setIsDragOver] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
 
+  const validateAndSetFile = (selectedFile: File) => {
+    // PPT 파일 거부
+    if (selectedFile.name.match(/\.(ppt|pptx)$/i)) {
+      setError('PPT 파일은 지원하지 않습니다. PDF 또는 이미지 파일(PNG, JPG)로 변환하여 업로드해주세요.');
+      setFile(null);
+      return false;
+    }
+    
+    // 허용된 파일 형식 확인
+    if (!selectedFile.name.match(/\.(pdf|png|jpg|jpeg)$/i)) {
+      setError('지원하지 않는 파일 형식입니다. PDF 또는 이미지 파일(PNG, JPG)만 업로드 가능합니다.');
+      setFile(null);
+      return false;
+    }
+    
+    setFile(selectedFile);
+    setError('');
+    
+    if (!title) {
+      setTitle(selectedFile.name.replace(/\.[^/.]+$/, ''));
+    }
+    
+    // 파일 확장자에 따라 format 자동 설정
+    const ext = selectedFile.name.split('.').pop()?.toLowerCase();
+    if (ext === 'pdf') {
+      setFormat('pdf');
+    } else if (ext === 'png' || ext === 'jpg' || ext === 'jpeg') {
+      setFormat('png');
+    }
+    return true;
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      const selectedFile = e.target.files[0];
-      
-      // PPT 파일 거부
-      if (selectedFile.name.match(/\.(ppt|pptx)$/i)) {
-        setError('PPT 파일은 지원하지 않습니다. PDF 또는 이미지 파일(PNG, JPG)로 변환하여 업로드해주세요.');
-        setFile(null);
-        // Reset file input
+      const isValid = validateAndSetFile(e.target.files[0]);
+      if (!isValid) {
         e.target.value = '';
-        return;
       }
-      
-      // 허용된 파일 형식 확인
-      if (!selectedFile.name.match(/\.(pdf|png|jpg|jpeg)$/i)) {
-        setError('지원하지 않는 파일 형식입니다. PDF 또는 이미지 파일(PNG, JPG)만 업로드 가능합니다.');
-        setFile(null);
-        e.target.value = '';
-        return;
-      }
-      
-      setFile(selectedFile);
-      setError(''); // Clear any previous errors
-      
-      if (!title) {
-        setTitle(selectedFile.name.replace(/\.[^/.]+$/, ''));
-      }
-      
-      // 파일 확장자에 따라 format 자동 설정
-      const ext = selectedFile.name.split('.').pop()?.toLowerCase();
-      if (ext === 'pdf') {
-        setFormat('pdf');
-      } else if (ext === 'png' || ext === 'jpg' || ext === 'jpeg') {
-        setFormat('png');
-      }
+    }
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      validateAndSetFile(e.dataTransfer.files[0]);
     }
   };
 
@@ -167,15 +193,21 @@ export function UploadPage() {
         <Box component="form" onSubmit={handleSubmit}>
           <Box
             sx={{
-              border: '2px dashed #ccc',
+              border: isDragOver ? '2px dashed' : '2px dashed #ccc',
+              borderColor: isDragOver ? 'primary.main' : '#ccc',
               borderRadius: 2,
               p: 4,
               textAlign: 'center',
               mb: 3,
               cursor: 'pointer',
-              '&:hover': { borderColor: 'primary.main' },
+              bgcolor: isDragOver ? 'action.hover' : 'transparent',
+              transition: 'all 0.2s ease',
+              '&:hover': { borderColor: 'primary.main', bgcolor: 'action.hover' },
             }}
             onClick={() => document.getElementById('file-input')?.click()}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
           >
             <input
               id="file-input"

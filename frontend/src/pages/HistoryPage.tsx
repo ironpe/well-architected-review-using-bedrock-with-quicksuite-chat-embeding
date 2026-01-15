@@ -33,6 +33,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { ReviewStatus, ReviewRequest } from '../types';
 import { api } from '../services/api';
+import { useAuth } from '../contexts/AuthContext';
 
 const mockHistory = [
   {
@@ -77,6 +78,10 @@ export function HistoryPage() {
   const [previewUrl, setPreviewUrl] = useState('');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ReviewRequest | null>(null);
+  const { user } = useAuth();
+  
+  // Requester_Group 사용자인지 확인
+  const isRequester = user?.group === 'Requester_Group';
   const [deleting, setDeleting] = useState(false);
   const navigate = useNavigate();
 
@@ -298,13 +303,20 @@ export function HistoryPage() {
                     <TableCell>{formatDate(item.updatedAt)}</TableCell>
                     <TableCell align="center">
                       <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                        <Tooltip title={item.status === 'In Review' ? '검토 진행 중...' : '상세 보기'}>
+                        <Tooltip title={
+                          item.status === 'In Review' ? '검토 진행 중...' :
+                          (isRequester && item.status !== 'Review Completed') ? '검토 완료 후 확인 가능' :
+                          '상세 보기'
+                        }>
                           <span>
                             <IconButton 
                               size="small" 
                               color="primary"
                               onClick={() => handleViewDetails(item)}
-                              disabled={item.status === 'In Review'}
+                              disabled={
+                                item.status === 'In Review' ||
+                                (isRequester && item.status !== 'Review Completed')
+                              }
                             >
                               <ViewIcon />
                             </IconButton>

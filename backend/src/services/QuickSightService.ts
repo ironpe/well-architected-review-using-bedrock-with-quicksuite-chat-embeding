@@ -35,6 +35,11 @@ export class QuickSightService {
     embedUrl: string;
     agentId: string;
   }> {
+    // Check if Agent ID is configured
+    if (!this.agentId) {
+      throw new Error('QUICKSIGHT_AGENT_ID environment variable is not configured. Please follow the QuickSuite MCP setup guide in README.');
+    }
+
     try {
       // QuickSight 사용자 이름 사용 (환경 변수에서)
       const quicksightUserName = process.env.QUICKSIGHT_USER_NAME || 'Admin/admin';

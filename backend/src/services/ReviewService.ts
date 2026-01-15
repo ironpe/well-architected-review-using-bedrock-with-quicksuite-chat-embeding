@@ -263,7 +263,7 @@ export class ReviewService {
   }
 
   /**
-   * Delete review request
+   * Delete review request and associated documents
    */
   async deleteReviewRequest(reviewRequestId: string): Promise<void> {
     validateRequiredString(reviewRequestId, 'reviewRequestId');
@@ -271,15 +271,85 @@ export class ReviewService {
     // Check if review request exists
     const reviewRequest = await this.getReviewRequest(reviewRequestId);
     
-    // Only allow deletion if not in review
-    if (reviewRequest.status === 'In Review') {
-      throw new ValidationError('Cannot delete review request that is currently in review');
+    // Only allow deletion if status is Pending Review
+    if (reviewRequest.status !== 'Pending Review') {
+      throw new ValidationError('Cannot delete review request. Only requests with "Pending Review" status can be deleted.');
     }
 
-    // Delete from DynamoDB
-    // Note: In production, consider soft delete or archiving
+    // Import S3 client for file deletion
+    const { S3Client, DeleteObjectCommand, ListObjectsV2Command } = await import('@aws-sdk/client-s3');
     const { DeleteCommand } = await import('@aws-sdk/lib-dynamodb');
     
+    const s3Client = new S3Client({ region: environment.aws.region });
+    const documentsBucket = environment.s3.documentsBucket;
+
+    // 1. Delete S3 files (all versions under this review request)
+    try {
+      const s3Prefix = `documents/${reviewRequestId}/`;
+      
+      // List all objects with this prefix
+      const listResult = await s3Client.send(
+        new ListObjectsV2Command({
+          Bucket: documentsBucket,
+          Prefix: s3Prefix,
+        })
+      );
+
+      // Delete each object
+      if (listResult.Contents && listResult.Contents.length > 0) {
+        for (const obj of listResult.Contents) {
+          if (obj.Key) {
+            await s3Client.send(
+              new DeleteObjectCommand({
+                Bucket: documentsBucket,
+                Key: obj.Key,
+              })
+            );
+            console.log(`Deleted S3 object: ${obj.Key}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting S3 files:', error);
+      // Continue with DynamoDB deletion even if S3 fails
+    }
+
+    // 2. Delete document records from DynamoDB
+    try {
+      // Query documents table for this review request
+      const documentsTable = environment.dynamodb.documentsTable;
+      const docResult = await this.dynamoClient.send(
+        new QueryCommand({
+          TableName: documentsTable,
+          IndexName: 'ReviewRequestIndex',
+          KeyConditionExpression: 'reviewRequestId = :reviewRequestId',
+          ExpressionAttributeValues: {
+            ':reviewRequestId': reviewRequestId,
+          },
+        })
+      );
+
+      // Delete each document record
+      if (docResult.Items && docResult.Items.length > 0) {
+        for (const doc of docResult.Items) {
+          await this.dynamoClient.send(
+            new DeleteCommand({
+              TableName: documentsTable,
+              Key: {
+                PK: doc.PK,
+                SK: doc.SK,
+              },
+            })
+          );
+          console.log(`Deleted document record: ${doc.documentId}`);
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting document records:', error);
+      // Continue with review request deletion
+    }
+
+    // 3. Delete review request from DynamoDB
     await this.dynamoClient.send(
       new DeleteCommand({
         TableName: this.reviewRequestsTable,

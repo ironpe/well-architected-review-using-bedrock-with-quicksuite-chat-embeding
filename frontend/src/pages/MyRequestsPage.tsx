@@ -15,8 +15,12 @@ import {
   CircularProgress,
   Alert,
   Button,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
 } from '@mui/material';
-import { Visibility as ViewIcon, GetApp as DownloadIcon } from '@mui/icons-material';
+import { Visibility as ViewIcon, GetApp as DownloadIcon, Delete as DeleteIcon, Description as PreviewIcon } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { ReviewStatus, ReviewRequest } from '../types';
 import { api } from '../services/api';
@@ -25,6 +29,11 @@ export function MyRequestsPage() {
   const [requests, setRequests] = useState<ReviewRequest[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState<ReviewRequest | null>(null);
+  const [deleting, setDeleting] = useState(false);
+  const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -100,6 +109,39 @@ export function MyRequestsPage() {
     return new Date(dateString).toLocaleString('ko-KR');
   };
 
+  const handleDeleteClick = (request: ReviewRequest) => {
+    setDeleteTarget(request);
+    setDeleteConfirmOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!deleteTarget) return;
+
+    try {
+      setDeleting(true);
+      await api.deleteReviewRequest(deleteTarget.reviewRequestId);
+      
+      // Remove from list
+      setRequests(prev => prev.filter(r => r.reviewRequestId !== deleteTarget.reviewRequestId));
+      setDeleteConfirmOpen(false);
+      setDeleteTarget(null);
+    } catch (err: any) {
+      setError(err.response?.data?.error || '삭제에 실패했습니다');
+    } finally {
+      setDeleting(false);
+    }
+  };
+
+  const handlePreview = async (request: ReviewRequest) => {
+    try {
+      const url = await api.getDocumentPreviewUrl(request.documentId);
+      setPreviewUrl(url);
+      setPreviewOpen(true);
+    } catch (err: any) {
+      setError('문서 미리보기를 불러오는데 실패했습니다');
+    }
+  };
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom fontWeight={700} sx={{ mb: 3 }}>
@@ -150,37 +192,57 @@ export function MyRequestsPage() {
                         label={getStatusLabel(request.status)}
                         color={getStatusColor(request.status)}
                         size="small"
+                        sx={{ borderRadius: '4px' }}
                       />
                     </TableCell>
                     <TableCell>v{request.currentVersion}</TableCell>
                     <TableCell>{formatDate(request.createdAt)}</TableCell>
                     <TableCell>{formatDate(request.updatedAt)}</TableCell>
                     <TableCell align="center">
-                      <Tooltip title={request.status === 'In Review' ? '검토 진행 중...' : '상세 보기'}>
-                        <span>
+                      <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                        <Tooltip title="문서 미리보기">
                           <IconButton
                             size="small"
-                            color="primary"
-                            onClick={() => {
-                              if (request.status === 'Review Completed' && request.executionId) {
-                                navigate(`/reviews/${request.executionId}/results`);
-                              } else {
-                                navigate(`/reviews/${request.reviewRequestId}`);
-                              }
-                            }}
-                            disabled={request.status === 'In Review'}
+                            color="info"
+                            onClick={() => handlePreview(request)}
                           >
-                            <ViewIcon />
-                          </IconButton>
-                        </span>
-                      </Tooltip>
-                      {request.status === 'Review Completed' && (
-                        <Tooltip title="리포트 다운로드">
-                          <IconButton size="small" color="primary">
-                            <DownloadIcon />
+                            <PreviewIcon />
                           </IconButton>
                         </Tooltip>
-                      )}
+                        {request.status === 'Review Completed' && (
+                          <Tooltip title={request.executionId ? '검토 결과 보기' : '검토 결과 없음'}>
+                            <span>
+                              <IconButton
+                                size="small"
+                                color="info"
+                                onClick={() => navigate(`/reviews/${request.executionId}/results`)}
+                                disabled={!request.executionId}
+                              >
+                                <ViewIcon />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        )}
+                        {request.status === 'Review Completed' && (
+                          <Tooltip title="리포트 다운로드">
+                            <IconButton size="small" color="primary">
+                              <DownloadIcon />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                        <Tooltip title={request.status === 'Pending Review' ? '삭제' : '검토 대기 중일 때만 삭제 가능'}>
+                          <span>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleDeleteClick(request)}
+                              disabled={request.status !== 'Pending Review'}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </span>
+                        </Tooltip>
+                      </Box>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -204,6 +266,57 @@ export function MyRequestsPage() {
           )}
         </Paper>
       )}
+
+      {/* 삭제 확인 다이얼로그 */}
+      <Dialog
+        open={deleteConfirmOpen}
+        onClose={() => !deleting && setDeleteConfirmOpen(false)}
+      >
+        <DialogTitle>검토 요청 삭제</DialogTitle>
+        <DialogContent>
+          <Typography>
+            "{deleteTarget?.documentTitle || deleteTarget?.documentId}"를 삭제하시겠습니까?
+          </Typography>
+          <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+            업로드된 문서와 관련 데이터가 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+          </Typography>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setDeleteConfirmOpen(false)} disabled={deleting}>
+            취소
+          </Button>
+          <Button 
+            onClick={handleDeleteConfirm} 
+            color="error" 
+            variant="contained"
+            disabled={deleting}
+          >
+            {deleting ? '삭제 중...' : '삭제'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* 문서 미리보기 다이얼로그 */}
+      <Dialog 
+        open={previewOpen} 
+        onClose={() => setPreviewOpen(false)}
+        maxWidth="lg"
+        fullWidth
+      >
+        <DialogTitle>문서 미리보기</DialogTitle>
+        <DialogContent>
+          <Box sx={{ height: '70vh', width: '100%' }}>
+            <iframe
+              src={previewUrl}
+              style={{ width: '100%', height: '100%', border: 'none' }}
+              title="Document Preview"
+            />
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setPreviewOpen(false)}>닫기</Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 }
