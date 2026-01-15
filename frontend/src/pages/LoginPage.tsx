@@ -130,7 +130,7 @@ export function LoginPage() {
                   이메일: requester@example.com
                 </Typography>
                 <Typography variant="body2" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
-                  패스워드: TempPass123! (첫 로그인 시 변경)
+                  패스워드: Requester123!
                 </Typography>
               </Box>
               <Box>
@@ -141,7 +141,7 @@ export function LoginPage() {
                   이메일: reviewer@example.com
                 </Typography>
                 <Typography variant="body2" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
-                  패스워드: TempPass123! (첫 로그인 시 변경)
+                  패스워드: Reviewer123!
                 </Typography>
               </Box>
             </Paper>

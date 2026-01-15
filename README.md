@@ -213,19 +213,17 @@ cd well-architected-review-using-bedrock-with-quicksuite-chat-embeding
 ### 설치 및 환경 설정
 
 ```bash
-# 1. 의존성 설치 (각 디렉토리에서 개별 실행)
+# 1. 의존성 설치
 npm install
-npm install --include=dev -w backend
-npm install -w frontend
-npm install -w infrastructure
+cd backend && npm install && cd ..
+cd frontend && npm install && cd ..
+cd infrastructure && npm install && cd ..
 
 # 2. 환경 변수 파일 생성
 cp frontend/.env.example frontend/.env
 cp backend/.env.example backend/.env
 cp infrastructure/.env.example infrastructure/.env
 ```
-
-> 💡 `-w` 옵션은 npm workspace를 지정합니다. backend는 TypeScript 빌드를 위해 `--include=dev` 옵션이 필요합니다.
 
 ### Frontend 개발 서버 실행
 
@@ -286,12 +284,19 @@ CDK 배포 시 User Pool은 생성되지만 사용자는 생성되지 않습니�
 USER_POOL_ID=$(aws cloudformation describe-stacks --stack-name ArchReview-Minimal \
   --query 'Stacks[0].Outputs[?OutputKey==`UserPoolIdOutput`].OutputValue' --output text --region us-east-1)
 
-# Requester 사용자 생성 (A_Group)
+# Requester 사용자 생성 (Requester_Group)
 aws cognito-idp admin-create-user \
   --user-pool-id $USER_POOL_ID \
   --username requester@example.com \
   --user-attributes Name=email,Value=requester@example.com Name=email_verified,Value=true \
-  --temporary-password TempPass123! \
+  --message-action SUPPRESS \
+  --region us-east-1
+
+aws cognito-idp admin-set-user-password \
+  --user-pool-id $USER_POOL_ID \
+  --username requester@example.com \
+  --password Requester123! \
+  --permanent \
   --region us-east-1
 
 aws cognito-idp admin-add-user-to-group \
@@ -305,7 +310,14 @@ aws cognito-idp admin-create-user \
   --user-pool-id $USER_POOL_ID \
   --username reviewer@example.com \
   --user-attributes Name=email,Value=reviewer@example.com Name=email_verified,Value=true \
-  --temporary-password TempPass123! \
+  --message-action SUPPRESS \
+  --region us-east-1
+
+aws cognito-idp admin-set-user-password \
+  --user-pool-id $USER_POOL_ID \
+  --username reviewer@example.com \
+  --password Reviewer123! \
+  --permanent \
   --region us-east-1
 
 aws cognito-idp admin-add-user-to-group \
@@ -315,9 +327,13 @@ aws cognito-idp admin-add-user-to-group \
   --region us-east-1
 ```
 
-> 💡 첫 로그인 시 임시 비밀번호를 변경해야 합니다.
+**테스트 계정:**
+| 사용자 | 그룹 | 비밀번호 |
+|--------|------|----------|
+| requester@example.com | Requester_Group | Requester123! |
+| reviewer@example.com | Reviewer_Group | Reviewer123! |
 
-### 6. Frontend 빌드 (프로덕션)
+### 6. Frontend 빌드 (프로덕션일 때만)
 ```bash
 cd frontend
 npm run build
