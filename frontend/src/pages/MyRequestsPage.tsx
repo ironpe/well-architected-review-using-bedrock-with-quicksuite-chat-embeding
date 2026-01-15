@@ -239,11 +239,11 @@ export function MyRequestsPage() {
                           </IconButton>
                         </Tooltip>
                         {request.status === 'Review Completed' && (
-                          <Tooltip title={request.executionId ? '검토 결과 보기' : '검토 결과 없음'}>
+                          <Tooltip title="검토 결과 보기">
                             <span>
                               <IconButton
                                 size="small"
-                                color="info"
+                                color="primary"
                                 onClick={() => navigate(`/reviews/${request.executionId}/results`)}
                                 disabled={!request.executionId}
                               >
@@ -270,7 +270,12 @@ export function MyRequestsPage() {
                             </span>
                           </Tooltip>
                         )}
-                        <Tooltip title={request.status === 'Pending Review' ? '삭제' : '검토 대기 중일 때만 삭제 가능'}>
+                        <Tooltip title={
+                          request.status === 'Pending Review' ? '삭제' :
+                          request.status === 'In Review' ? '검토 중일 때는 삭제 불가' :
+                          request.status === 'Review Completed' ? '검토 완료된 항목은 삭제 불가' :
+                          '삭제'
+                        }>
                           <span>
                             <IconButton
                               size="small"

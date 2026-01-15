@@ -333,26 +333,7 @@ export function HistoryPage() {
                     <TableCell>{formatDate(item.updatedAt)}</TableCell>
                     <TableCell align="center">
                       <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                        <Tooltip title={
-                          item.status === 'In Review' ? '검토 진행 중...' :
-                          (isRequester && item.status !== 'Review Completed') ? '검토 완료 후 확인 가능' :
-                          '상세 보기'
-                        }>
-                          <span>
-                            <IconButton 
-                              size="small" 
-                              color="primary"
-                              onClick={() => handleViewDetails(item)}
-                              disabled={
-                                item.status === 'In Review' ||
-                                (isRequester && item.status !== 'Review Completed')
-                              }
-                            >
-                              <ViewIcon />
-                            </IconButton>
-                          </span>
-                        </Tooltip>
-                        <Tooltip title="문서 프리뷰">
+                        <Tooltip title="문서 미리보기">
                           <IconButton 
                             size="small" 
                             color="info"
@@ -361,6 +342,20 @@ export function HistoryPage() {
                             <PreviewIcon />
                           </IconButton>
                         </Tooltip>
+                        {item.status === 'Review Completed' && (
+                          <Tooltip title="검토 결과 보기">
+                            <span>
+                              <IconButton 
+                                size="small" 
+                                color="primary"
+                                onClick={() => handleViewDetails(item)}
+                                disabled={!item.executionId}
+                              >
+                                <ViewIcon />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        )}
                         {item.status === 'Review Completed' && (
                           <Tooltip title="리포트 다운로드">
                             <span>
@@ -380,6 +375,7 @@ export function HistoryPage() {
                           </Tooltip>
                         )}
                         <Tooltip title={
+                          item.status === 'Pending Review' ? '삭제' :
                           item.status === 'In Review' ? '검토 중일 때는 삭제 불가' :
                           item.status === 'Review Completed' ? '검토 완료된 항목은 삭제 불가' :
                           '삭제'
