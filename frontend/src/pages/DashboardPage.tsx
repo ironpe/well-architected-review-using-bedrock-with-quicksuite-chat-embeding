@@ -211,9 +211,24 @@ export function DashboardPage() {
           전체 검토 요청: {reviews.length}개 {searchTerm || statusFilter !== 'All' ? `(필터링: ${filteredReviews.length}개)` : ''}
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
-          <Chip label={`대기 중: ${reviews.filter(r => r.status === 'Pending Review').length}개`} color="warning" size="small" />
-          <Chip label={`검토 중: ${reviews.filter(r => r.status === 'In Review').length}개`} color="info" size="small" />
-          <Chip label={`완료: ${reviews.filter(r => r.status === 'Review Completed').length}개`} color="success" size="small" />
+          <Chip 
+            label={`대기 중: ${reviews.filter(r => r.status === 'Pending Review').length}개`} 
+            color="warning" 
+            size="small"
+            sx={{ borderRadius: '4px' }}
+          />
+          <Chip 
+            label={`검토 중: ${reviews.filter(r => r.status === 'In Review').length}개`} 
+            color="info" 
+            size="small"
+            sx={{ borderRadius: '4px' }}
+          />
+          <Chip 
+            label={`완료: ${reviews.filter(r => r.status === 'Review Completed').length}개`} 
+            color="success" 
+            size="small"
+            sx={{ borderRadius: '4px' }}
+          />
         </Box>
       </Paper>
 
