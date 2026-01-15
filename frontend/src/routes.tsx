@@ -26,6 +26,22 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+function RoleProtectedRoute({ 
+  children, 
+  allowedGroups 
+}: { 
+  children: React.ReactNode;
+  allowedGroups: string[];
+}) {
+  const { user } = useAuth();
+
+  if (!user || !allowedGroups.includes(user.group)) {
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}
+
 export function AppRoutes() {
   const { isAuthenticated, user, logout } = useAuth();
 
@@ -49,9 +65,30 @@ export function AppRoutes() {
         <Route path="/upload" element={<UploadPage />} />
         <Route path="/my-requests" element={<MyRequestsPage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/history" element={<HistoryPage />} />
-        <Route path="/admin/agents" element={<AgentConfigPage />} />
-        <Route path="/admin/policies" element={<PolicyManagementPage />} />
+        <Route 
+          path="/history" 
+          element={
+            <RoleProtectedRoute allowedGroups={['Reviewer_Group']}>
+              <HistoryPage />
+            </RoleProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/agents" 
+          element={
+            <RoleProtectedRoute allowedGroups={['Reviewer_Group']}>
+              <AgentConfigPage />
+            </RoleProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/admin/policies" 
+          element={
+            <RoleProtectedRoute allowedGroups={['Reviewer_Group']}>
+              <PolicyManagementPage />
+            </RoleProtectedRoute>
+          } 
+        />
         <Route path="/reviews/:id/execute" element={<ReviewExecutePage />} />
         <Route path="/reviews/:executionId/results" element={<ReviewResultsPage />} />
       </Route>

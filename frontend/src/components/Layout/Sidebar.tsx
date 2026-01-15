@@ -24,7 +24,6 @@ export function Sidebar({ userGroup, open }: SidebarProps) {
   const aGroupMenuItems = [
     { text: '문서 업로드', icon: <UploadIcon />, path: '/upload' },
     { text: '내 검토 요청', icon: <AssessmentIcon />, path: '/my-requests' },
-    { text: '히스토리', icon: <HistoryIcon />, path: '/history' },
   ];
 
   const bGroupMenuItems = [
