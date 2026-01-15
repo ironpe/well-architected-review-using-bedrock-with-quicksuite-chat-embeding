@@ -199,13 +199,16 @@ flowchart TB
 ### 프로젝트 다운로드
 
 ```bash
-# Git Clone
-git clone https://github.com/IncheolRoh/well-architected-review-using-bedrock-with-quicksuite-chat-embeding.git
+# Git Clone (SSH - 권장)
+git clone git@github.com:IncheolRoh/well-architected-review-using-bedrock-with-quicksuite-chat-embeding.git
 cd well-architected-review-using-bedrock-with-quicksuite-chat-embeding
 
-# 또는 ZIP 다운로드
-# https://github.com/IncheolRoh/well-architected-review-using-bedrock-with-quicksuite-chat-embeding/archive/refs/heads/main.zip
+# Git Clone (HTTPS)
+git clone https://github.com/IncheolRoh/well-architected-review-using-bedrock-with-quicksuite-chat-embeding.git
+cd well-architected-review-using-bedrock-with-quicksuite-chat-embeding
 ```
+
+> 💡 HTTPS 방식은 GitHub 토큰 인증이 필요할 수 있습니다. SSH 키가 설정되어 있다면 SSH 방식을 권장합니다.
 
 ### 설치 및 환경 설정
 
