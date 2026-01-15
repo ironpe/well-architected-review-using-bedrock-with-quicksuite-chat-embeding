@@ -363,15 +363,15 @@ export function HistoryPage() {
             <Table>
               <TableHead>
 <TableRow>
-                  <TableCell width="50px" />
-                  <TableCell width="20%">문서 제목</TableCell>
-                  <TableCell width="15%">제출자</TableCell>
-                  <TableCell width="15%">검토자</TableCell>
-                  <TableCell width="10%">상태</TableCell>
-                  <TableCell width="8%">문서 버전</TableCell>
-                  <TableCell width="8%">검토 횟수</TableCell>
-                  <TableCell width="12%">생성일</TableCell>
-                  <TableCell width="12%">최종 검토일</TableCell>
+                  <TableCell width="40px" />
+                  <TableCell width="18%">문서 제목</TableCell>
+                  <TableCell width="14%">제출자</TableCell>
+                  <TableCell width="14%">검토자</TableCell>
+                  <TableCell width="8%">상태</TableCell>
+                  <TableCell width="7%" sx={{ whiteSpace: 'nowrap' }}>문서 버전</TableCell>
+                  <TableCell width="7%" sx={{ whiteSpace: 'nowrap' }}>검토 횟수</TableCell>
+                  <TableCell width="11%">생성일</TableCell>
+                  <TableCell width="11%" sx={{ whiteSpace: 'nowrap' }}>최종 검토일</TableCell>
                   <TableCell align="center" width="10%">작업</TableCell>
                 </TableRow>
               </TableHead>
