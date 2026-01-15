@@ -34,6 +34,7 @@ export function MyRequestsPage() {
   const [deleting, setDeleting] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [downloading, setDownloading] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -142,6 +143,34 @@ export function MyRequestsPage() {
     }
   };
 
+  const handleDownloadReport = async (request: ReviewRequest) => {
+    if (!request.executionId) {
+      setError('검토 결과가 없습니다');
+      return;
+    }
+
+    try {
+      setDownloading(request.reviewRequestId);
+      
+      // Download PDF report
+      const blob = await api.downloadPdfReport(request.executionId);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `architecture-review-${request.documentTitle || request.documentId}-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.response?.data?.error || '리포트 다운로드에 실패했습니다');
+    } finally {
+      setDownloading(null);
+    }
+  };
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom fontWeight={700} sx={{ mb: 3 }}>
@@ -225,9 +254,20 @@ export function MyRequestsPage() {
                         )}
                         {request.status === 'Review Completed' && (
                           <Tooltip title="리포트 다운로드">
-                            <IconButton size="small" color="primary">
-                              <DownloadIcon />
-                            </IconButton>
+                            <span>
+                              <IconButton 
+                                size="small" 
+                                color="primary"
+                                onClick={() => handleDownloadReport(request)}
+                                disabled={!request.executionId || downloading === request.reviewRequestId}
+                              >
+                                {downloading === request.reviewRequestId ? (
+                                  <CircularProgress size={20} />
+                                ) : (
+                                  <DownloadIcon />
+                                )}
+                              </IconButton>
+                            </span>
                           </Tooltip>
                         )}
                         <Tooltip title={request.status === 'Pending Review' ? '삭제' : '검토 대기 중일 때만 삭제 가능'}>

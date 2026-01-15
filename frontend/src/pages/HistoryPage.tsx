@@ -29,6 +29,7 @@ import {
   Visibility as ViewIcon,
   Description as PreviewIcon,
   Delete as DeleteIcon,
+  GetApp as DownloadIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { ReviewStatus, ReviewRequest } from '../types';
@@ -78,6 +79,7 @@ export function HistoryPage() {
   const [previewUrl, setPreviewUrl] = useState('');
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ReviewRequest | null>(null);
+  const [downloading, setDownloading] = useState<string | null>(null);
   const { user } = useAuth();
   
   // Requester_Group 사용자인지 확인
@@ -197,6 +199,34 @@ export function HistoryPage() {
       setError(err.response?.data?.error || '삭제에 실패했습니다');
     } finally {
       setDeleting(false);
+    }
+  };
+
+  const handleDownloadReport = async (item: ReviewRequest) => {
+    if (!item.executionId) {
+      setError('검토 결과가 없습니다');
+      return;
+    }
+
+    try {
+      setDownloading(item.reviewRequestId);
+      
+      // Download PDF report
+      const blob = await api.downloadPdfReport(item.executionId);
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `architecture-review-${item.documentTitle || item.documentId}-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.response?.data?.error || '리포트 다운로드에 실패했습니다');
+    } finally {
+      setDownloading(null);
     }
   };
 
@@ -331,6 +361,24 @@ export function HistoryPage() {
                             <PreviewIcon />
                           </IconButton>
                         </Tooltip>
+                        {item.status === 'Review Completed' && (
+                          <Tooltip title="리포트 다운로드">
+                            <span>
+                              <IconButton 
+                                size="small" 
+                                color="success"
+                                onClick={() => handleDownloadReport(item)}
+                                disabled={!item.executionId || downloading === item.reviewRequestId}
+                              >
+                                {downloading === item.reviewRequestId ? (
+                                  <CircularProgress size={20} />
+                                ) : (
+                                  <DownloadIcon />
+                                )}
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        )}
                         <Tooltip title="삭제">
                           <IconButton 
                             size="small" 
