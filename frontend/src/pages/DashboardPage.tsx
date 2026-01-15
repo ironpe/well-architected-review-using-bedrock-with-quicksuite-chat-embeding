@@ -17,6 +17,10 @@ import {
   DialogContent,
   DialogActions,
   TextField,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
 import { useNavigate } from 'react-router-dom';
 import { ReviewStatus, ReviewRequest } from '../types';
@@ -32,6 +36,8 @@ export function DashboardPage() {
   const [submitting, setSubmitting] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewUrl, setPreviewUrl] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<ReviewStatus | 'All'>('All');
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -147,6 +153,16 @@ export function DashboardPage() {
     return new Date(dateString).toLocaleString('ko-KR');
   };
 
+  // 필터링된 검토 요청
+  const filteredReviews = reviews.filter(review => {
+    const documentTitle = review.documentTitle || review.documentId;
+    const matchesSearch = documentTitle.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         review.submitterEmail.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         review.reviewRequestId.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'All' || review.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  });
+
   return (
     <Box>
       <Typography variant="h4" gutterBottom fontWeight={700} sx={{ mb: 3 }}>
@@ -159,9 +175,40 @@ export function DashboardPage() {
         </Alert>
       )}
 
+      {/* 검색 및 필터 */}
+      <Paper sx={{ p: 2, mb: 3 }}>
+        <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
+          <TextField
+            label="검색"
+            placeholder="문서 제목, 제출자, 요청 ID"
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            size="small"
+            sx={{ flexGrow: 1 }}
+          />
+
+          <FormControl size="small" sx={{ minWidth: 200 }}>
+            <InputLabel>상태 필터</InputLabel>
+            <Select
+              value={statusFilter}
+              label="상태 필터"
+              onChange={(e) => setStatusFilter(e.target.value as ReviewStatus | 'All')}
+            >
+              <MenuItem value="All">전체</MenuItem>
+              <MenuItem value="Pending Review">검토 대기 중</MenuItem>
+              <MenuItem value="In Review">검토 중</MenuItem>
+              <MenuItem value="Modification Required">수정 필요</MenuItem>
+              <MenuItem value="Review Completed">검토 완료</MenuItem>
+              <MenuItem value="Rejected">반려됨</MenuItem>
+            </Select>
+          </FormControl>
+        </Box>
+      </Paper>
+
+      {/* 통계 요약 */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Typography variant="h6" gutterBottom>
-          전체 검토 요청: {reviews.length}개
+          전체 검토 요청: {reviews.length}개 {searchTerm || statusFilter !== 'All' ? `(필터링: ${filteredReviews.length}개)` : ''}
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
           <Chip label={`대기 중: ${reviews.filter(r => r.status === 'Pending Review').length}개`} color="warning" size="small" />
@@ -177,7 +224,7 @@ export function DashboardPage() {
       ) : (
         <>
           <Grid container spacing={3}>
-            {reviews.map((review) => (
+            {filteredReviews.map((review) => (
               <Grid item xs={12} md={6} key={review.reviewRequestId}>
                 <Card>
                   <CardContent>
@@ -272,10 +319,12 @@ export function DashboardPage() {
             ))}
           </Grid>
 
-          {reviews.length === 0 && (
+          {filteredReviews.length === 0 && (
             <Paper sx={{ p: 4, textAlign: 'center' }}>
               <Typography color="text.secondary">
-                현재 대기 중인 검토 요청이 없습니다.
+                {searchTerm || statusFilter !== 'All' 
+                  ? '검색 결과가 없습니다.' 
+                  : '현재 대기 중인 검토 요청이 없습니다.'}
               </Typography>
             </Paper>
           )}
