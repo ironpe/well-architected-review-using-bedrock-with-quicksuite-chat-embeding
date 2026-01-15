@@ -107,14 +107,21 @@ export class AuthMiddleware {
 
   /**
    * Get user group from Cognito groups
+   * Maps Cognito group names to internal UserGroup types
+   * - Reviewer_Group -> B_Group (reviewers)
+   * - Requester_Group -> A_Group (requesters)
    */
   getUserGroup(groups: string[] = []): UserGroup | null {
-    if (groups.includes('B_Group')) {
+    // B_Group mappings (reviewers)
+    if (groups.includes('Reviewer_Group')) {
       return 'B_Group';
     }
-    if (groups.includes('A_Group')) {
+    
+    // A_Group mappings (requesters)
+    if (groups.includes('Requester_Group')) {
       return 'A_Group';
     }
+    
     return null;
   }
 
