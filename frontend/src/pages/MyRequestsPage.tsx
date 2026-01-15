@@ -257,7 +257,7 @@ export function MyRequestsPage() {
                             <span>
                               <IconButton 
                                 size="small" 
-                                color="primary"
+                                color="success"
                                 onClick={() => handleDownloadReport(request)}
                                 disabled={!request.executionId || downloading === request.reviewRequestId}
                               >
