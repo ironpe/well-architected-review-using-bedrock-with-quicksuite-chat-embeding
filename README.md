@@ -340,6 +340,8 @@ npm run build
 # dist/ 폴더를 S3 또는 CloudFront에 배포
 ```
 
+> 💡 QuickSuite Chat Agent를 활성화하기 위해서는 **QuickSuite MCP 연동** 단계를 진행하세요.
+
 ---
 
 ## 개발 가이드
