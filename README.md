@@ -11,8 +11,9 @@ AWS Well-Architected Framework 기반의 AI 아키텍처 리뷰 시스템
 6. [배포 가이드](#배포-가이드)
 7. [QuickSuite MCP 연동](#quicksuite-mcp-연동)
 8. [운영 가이드](#운영-가이드)
-9. [트러블슈팅](#트러블슈팅)
-10. [CHANGELOG](#changelog)
+9. [리소스 삭제](#리소스-삭제)
+10. [트러블슈팅](#트러블슈팅)
+11. [CHANGELOG](#changelog)
 
 ---
 
@@ -195,6 +196,17 @@ flowchart TB
 - AWS CLI 설정 완료
 - AWS CDK CLI: `npm install -g aws-cdk`
 
+### 프로젝트 다운로드
+
+```bash
+# Git Clone
+git clone https://github.com/IncheolRoh/well-architected-review-using-bedrock-with-quicksuite-chat-embeding.git
+cd well-architected-review-using-bedrock-with-quicksuite-chat-embeding
+
+# 또는 ZIP 다운로드
+# https://github.com/IncheolRoh/well-architected-review-using-bedrock-with-quicksuite-chat-embeding/archive/refs/heads/main.zip
+```
+
 ### 설치 및 환경 설정
 
 ```bash
@@ -329,8 +341,6 @@ chmod +x build-layer.sh
 3. PyMuPDF로 지정 페이지를 PNG로 변환
 4. Base64로 인코딩하여 반환
 5. Node.js Lambda가 Claude Vision 분석
-
----
 
 ---
 
@@ -580,6 +590,59 @@ aws logs tail /aws/lambda/[ReviewExecutionFn] --since 30m --follow
 - `Analyzing page X with [model]...`
 - `[Pillar] Using text model` (최적화 활성화)
 - `Executive summary generation skipped` (비동기 모드)
+
+---
+
+## 리소스 삭제
+
+프로젝트에서 생성된 모든 AWS 리소스를 삭제하려면 아래 방법을 사용하세요.
+
+### 자동 삭제 스크립트 (권장)
+
+```bash
+# 삭제할 리소스 미리 확인 (실제 삭제 안함)
+./scripts/cleanup-resources.sh --dry-run
+
+# 확인 후 삭제 실행
+./scripts/cleanup-resources.sh
+
+# 확인 없이 바로 삭제 (CI/CD용)
+./scripts/cleanup-resources.sh --force
+```
+
+스크립트가 삭제하는 리소스:
+- **CDK 스택** (`ArchReview-Minimal`)
+  - DynamoDB 테이블 (5개)
+  - S3 버킷 (Documents, Reports)
+  - Lambda 함수 (10개+)
+  - API Gateway
+  - Cognito User Pool
+- **AgentCore Gateway** (MCP 연동 설정 시)
+- **Cognito M2M 클라이언트** (MCP 연동 설정 시)
+- **환경 설정 파일** (`infrastructure/.env.agentcore`)
+
+### 수동 삭제
+
+```bash
+# 1. CDK 스택 삭제
+cd infrastructure
+npx cdk destroy ArchReview-Minimal --force
+
+# 2. AgentCore Gateway 삭제 (설정한 경우)
+# Gateway ID는 infrastructure/.env.agentcore에서 확인
+aws bedrock-agentcore-control delete-gateway \
+  --gateway-identifier <GATEWAY_ID> \
+  --region us-east-1
+
+# 3. 환경 파일 정리
+rm -f infrastructure/.env.agentcore
+```
+
+### 주의사항
+
+- ⚠️ **데이터 손실**: 삭제 시 DynamoDB와 S3의 모든 데이터가 영구 삭제됩니다
+- 💡 **백업 권장**: 중요한 리뷰 결과는 삭제 전 다운로드하세요
+- 🔄 **재배포**: 삭제 후 다시 배포하려면 [배포 가이드](#배포-가이드)를 참조하세요
 
 ---
 
