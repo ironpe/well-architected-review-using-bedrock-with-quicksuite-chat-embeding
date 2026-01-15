@@ -216,8 +216,8 @@ export class MinimalArchitectureReviewStack extends cdk.Stack {
       // QuickSight configuration (optional)
       QUICKSIGHT_ACCOUNT_ID: cdk.Aws.ACCOUNT_ID,
       QUICKSIGHT_NAMESPACE: 'default',
-      QUICKSIGHT_AGENT_ID: 'ef4cec92-6280-4c25-8e9a-c49814b73283',  // QuickSight Chat Agent ID
-      QUICKSIGHT_USER_NAME: 'admin/ironpe-Isengard',  // QuickSight 사용자 이름
+      QUICKSIGHT_AGENT_ID: '',  // QuickSight Chat Agent ID (README의 QuickSuite MCP 연동 후 설정)
+      QUICKSIGHT_USER_NAME: '',  // QuickSight 사용자 이름 (README의 QuickSuite MCP 연동 후 설정)
     };
 
     // Lambda Layer with dependencies
