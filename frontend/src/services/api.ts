@@ -92,6 +92,11 @@ class ApiClient {
     return response.data;
   }
 
+  async getReviewExecutions(reviewRequestId: string): Promise<{ executions: any[] }> {
+    const response = await this.client.get(`/reviews/request/${reviewRequestId}/executions`);
+    return response.data;
+  }
+
   // Download reports
   async downloadPdfReport(executionId: string): Promise<Blob> {
     const response = await this.client.post(`/reviews/${executionId}/download`, 

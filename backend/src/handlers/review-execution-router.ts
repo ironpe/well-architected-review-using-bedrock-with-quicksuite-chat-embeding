@@ -8,6 +8,7 @@ import {
   getReviewStatusHandler,
   getReviewResultsHandler,
   downloadReportHandler,
+  getReviewExecutionsHandler,
 } from './review-execution.js';
 
 export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
@@ -22,6 +23,12 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
     if (method === 'POST' && path.endsWith('/execute')) {
       console.log('Routing to executeReviewHandler');
       return await executeReviewHandler(event);
+    }
+
+    // GET /reviews/request/{reviewRequestId}/executions
+    if (method === 'GET' && path.includes('/request/') && path.endsWith('/executions')) {
+      console.log('Routing to getReviewExecutionsHandler');
+      return await getReviewExecutionsHandler(event);
     }
 
     // GET /reviews/{executionId} - status (changed from /status)

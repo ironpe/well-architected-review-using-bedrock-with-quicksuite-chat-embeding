@@ -668,6 +668,7 @@ export class MinimalArchitectureReviewStack extends cdk.Stack {
         allowCredentials: true,
       },
     });
+    
     const reviewsExecute = reviews.addResource('execute', {
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
@@ -683,6 +684,15 @@ export class MinimalArchitectureReviewStack extends cdk.Stack {
       },
     });
     reviewsExecute.addMethod('POST', new apigateway.LambdaIntegration(reviewExecutionFn), {
+      authorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    // GET /reviews/request/{reviewRequestId}/executions
+    const reviewsRequest = reviews.addResource('request');
+    const reviewRequestByIdForExecutions = reviewsRequest.addResource('{reviewRequestId}');
+    const executions = reviewRequestByIdForExecutions.addResource('executions');
+    executions.addMethod('GET', new apigateway.LambdaIntegration(reviewExecutionFn), {
       authorizer,
       authorizationType: apigateway.AuthorizationType.COGNITO,
     });

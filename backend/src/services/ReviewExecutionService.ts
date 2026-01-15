@@ -4,7 +4,7 @@
  */
 
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, GetCommand, UpdateCommand, ScanCommand } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import { environment } from '../config/environment.js';
 import { AgentOrchestrationService } from './AgentOrchestrationService.js';
@@ -339,6 +339,33 @@ export class ReviewExecutionService {
     }
 
     return reviewExecutionRecordToDomain(result.Item as ReviewExecutionRecord);
+  }
+
+  /**
+   * Get all executions for a review request
+   */
+  async getExecutionsByReviewRequest(reviewRequestId: string): Promise<ReviewExecution[]> {
+    validateRequiredString(reviewRequestId, 'reviewRequestId');
+
+    // Use Scan with filter (not optimal but works without GSI)
+    const result = await this.dynamoClient.send(
+      new ScanCommand({
+        TableName: this.reviewExecutionsTable,
+        FilterExpression: 'reviewRequestId = :reviewRequestId AND SK = :sk',
+        ExpressionAttributeValues: {
+          ':reviewRequestId': reviewRequestId,
+          ':sk': 'METADATA',
+        },
+      })
+    );
+
+    if (!result.Items || result.Items.length === 0) {
+      return [];
+    }
+
+    // Sort by startedAt descending (most recent first)
+    const executions = result.Items.map(item => reviewExecutionRecordToDomain(item as ReviewExecutionRecord));
+    return executions.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
   }
 
   /**

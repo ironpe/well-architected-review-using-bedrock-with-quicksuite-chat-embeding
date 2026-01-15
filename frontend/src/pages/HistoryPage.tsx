@@ -24,12 +24,15 @@ import {
   DialogContent,
   DialogActions,
   Button,
+  Collapse,
 } from '@mui/material';
 import { 
   Visibility as ViewIcon,
   Description as PreviewIcon,
   Delete as DeleteIcon,
   GetApp as DownloadIcon,
+  KeyboardArrowDown as ExpandMoreIcon,
+  KeyboardArrowUp as ExpandLessIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { ReviewStatus, ReviewRequest } from '../types';
@@ -80,6 +83,9 @@ export function HistoryPage() {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [deleteTarget, setDeleteTarget] = useState<ReviewRequest | null>(null);
   const [downloading, setDownloading] = useState<string | null>(null);
+  const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [executionHistory, setExecutionHistory] = useState<Record<string, any[]>>({});
+  const [loadingExecutions, setLoadingExecutions] = useState<Set<string>>(new Set());
   const { user } = useAuth();
   
   // Requester_Group 사용자인지 확인
@@ -230,6 +236,59 @@ export function HistoryPage() {
     }
   };
 
+  const handleToggleExpand = async (reviewRequestId: string) => {
+    const newExpanded = new Set(expandedRows);
+    
+    if (newExpanded.has(reviewRequestId)) {
+      newExpanded.delete(reviewRequestId);
+    } else {
+      newExpanded.add(reviewRequestId);
+      
+      // Load execution history if not already loaded
+      if (!executionHistory[reviewRequestId]) {
+        setLoadingExecutions(prev => new Set(prev).add(reviewRequestId));
+        try {
+          const result = await api.getReviewExecutions(reviewRequestId);
+          setExecutionHistory(prev => ({
+            ...prev,
+            [reviewRequestId]: result.executions,
+          }));
+        } catch (err: any) {
+          setError('검토 이력을 불러오는데 실패했습니다');
+        } finally {
+          setLoadingExecutions(prev => {
+            const newSet = new Set(prev);
+            newSet.delete(reviewRequestId);
+            return newSet;
+          });
+        }
+      }
+    }
+    
+    setExpandedRows(newExpanded);
+  };
+
+  const handleDownloadExecutionReport = async (executionId: string, documentTitle: string) => {
+    try {
+      setDownloading(executionId);
+      
+      const blob = await api.downloadPdfReport(executionId);
+      
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `architecture-review-${documentTitle}-${executionId.substring(0, 8)}-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      window.URL.revokeObjectURL(url);
+    } catch (err: any) {
+      setError(err.response?.data?.error || '리포트 다운로드에 실패했습니다');
+    } finally {
+      setDownloading(null);
+    }
+  };
+
   const getSubmitterDisplay = (item: ReviewRequest): string => {
     // 이메일 주소를 우선적으로 표시
     return item.submitterEmail || item.submitterUserId || 'Unknown';
@@ -300,6 +359,7 @@ export function HistoryPage() {
             <Table>
               <TableHead>
                 <TableRow>
+                  <TableCell width="50px" />
                   <TableCell>문서 제목</TableCell>
                   <TableCell>제출자</TableCell>
                   <TableCell>검토자</TableCell>
@@ -312,88 +372,182 @@ export function HistoryPage() {
               </TableHead>
               <TableBody>
                 {filteredHistory.map((item) => (
-                  <TableRow key={item.reviewRequestId} hover>
-                    <TableCell>
-                      <Typography variant="body2" fontWeight="medium">
-                        {item.documentTitle || item.documentId}
-                      </Typography>
-                    </TableCell>
-                    <TableCell>{getSubmitterDisplay(item)}</TableCell>
-                    <TableCell>{item.reviewerEmail}</TableCell>
-                    <TableCell>
-                      <Chip
-                        label={getStatusLabel(item.status)}
-                        color={getStatusColor(item.status)}
-                        size="small"
-                        sx={{ borderRadius: '4px' }}
-                      />
-                    </TableCell>
-                    <TableCell>v{item.currentVersion}</TableCell>
-                    <TableCell>{formatDate(item.createdAt)}</TableCell>
-                    <TableCell>{formatDate(item.updatedAt)}</TableCell>
-                    <TableCell align="center">
-                      <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                        <Tooltip title="문서 미리보기">
-                          <IconButton 
-                            size="small" 
-                            color="info"
-                            onClick={() => handlePreview(item)}
-                          >
-                            <PreviewIcon />
-                          </IconButton>
-                        </Tooltip>
-                        {item.status === 'Review Completed' && (
-                          <Tooltip title="검토 결과 보기">
-                            <span>
-                              <IconButton 
-                                size="small" 
-                                color="primary"
-                                onClick={() => handleViewDetails(item)}
-                                disabled={!item.executionId}
-                              >
-                                <ViewIcon />
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-                        )}
-                        {item.status === 'Review Completed' && (
-                          <Tooltip title="리포트 다운로드">
-                            <span>
-                              <IconButton 
-                                size="small" 
-                                color="success"
-                                onClick={() => handleDownloadReport(item)}
-                                disabled={!item.executionId || downloading === item.reviewRequestId}
-                              >
-                                {downloading === item.reviewRequestId ? (
-                                  <CircularProgress size={20} />
-                                ) : (
-                                  <DownloadIcon />
-                                )}
-                              </IconButton>
-                            </span>
-                          </Tooltip>
-                        )}
-                        <Tooltip title={
-                          item.status === 'Pending Review' ? '삭제' :
-                          item.status === 'In Review' ? '검토 중일 때는 삭제 불가' :
-                          item.status === 'Review Completed' ? '검토 완료된 항목은 삭제 불가' :
-                          '삭제'
-                        }>
-                          <span>
+                  <>
+                    <TableRow key={item.reviewRequestId} hover>
+                      <TableCell>
+                        <IconButton
+                          size="small"
+                          onClick={() => handleToggleExpand(item.reviewRequestId)}
+                        >
+                          {expandedRows.has(item.reviewRequestId) ? <ExpandLessIcon /> : <ExpandMoreIcon />}
+                        </IconButton>
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2" fontWeight="medium">
+                          {item.documentTitle || item.documentId}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>{getSubmitterDisplay(item)}</TableCell>
+                      <TableCell>{item.reviewerEmail}</TableCell>
+                      <TableCell>
+                        <Chip
+                          label={getStatusLabel(item.status)}
+                          color={getStatusColor(item.status)}
+                          size="small"
+                          sx={{ borderRadius: '4px' }}
+                        />
+                      </TableCell>
+                      <TableCell>v{item.currentVersion}</TableCell>
+                      <TableCell>{formatDate(item.createdAt)}</TableCell>
+                      <TableCell>{formatDate(item.updatedAt)}</TableCell>
+                      <TableCell align="center">
+                        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                          <Tooltip title="문서 미리보기">
                             <IconButton 
                               size="small" 
-                              color="error"
-                              onClick={() => handleDeleteClick(item)}
-                              disabled={item.status === 'In Review' || item.status === 'Review Completed'}
+                              color="info"
+                              onClick={() => handlePreview(item)}
                             >
-                              <DeleteIcon />
+                              <PreviewIcon />
                             </IconButton>
-                          </span>
-                        </Tooltip>
-                      </Box>
-                    </TableCell>
-                  </TableRow>
+                          </Tooltip>
+                          {item.status === 'Review Completed' && (
+                            <Tooltip title="검토 결과 보기">
+                              <span>
+                                <IconButton 
+                                  size="small" 
+                                  color="primary"
+                                  onClick={() => handleViewDetails(item)}
+                                  disabled={!item.executionId}
+                                >
+                                  <ViewIcon />
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          )}
+                          {item.status === 'Review Completed' && (
+                            <Tooltip title="리포트 다운로드">
+                              <span>
+                                <IconButton 
+                                  size="small" 
+                                  color="success"
+                                  onClick={() => handleDownloadReport(item)}
+                                  disabled={!item.executionId || downloading === item.reviewRequestId}
+                                >
+                                  {downloading === item.reviewRequestId ? (
+                                    <CircularProgress size={20} />
+                                  ) : (
+                                    <DownloadIcon />
+                                  )}
+                                </IconButton>
+                              </span>
+                            </Tooltip>
+                          )}
+                          <Tooltip title={
+                            item.status === 'Pending Review' ? '삭제' :
+                            item.status === 'In Review' ? '검토 중일 때는 삭제 불가' :
+                            item.status === 'Review Completed' ? '검토 완료된 항목은 삭제 불가' :
+                            '삭제'
+                          }>
+                            <span>
+                              <IconButton 
+                                size="small" 
+                                color="error"
+                                onClick={() => handleDeleteClick(item)}
+                                disabled={item.status === 'In Review' || item.status === 'Review Completed'}
+                              >
+                                <DeleteIcon />
+                              </IconButton>
+                            </span>
+                          </Tooltip>
+                        </Box>
+                      </TableCell>
+                    </TableRow>
+                    
+                    {/* Expanded row for execution history */}
+                    <TableRow>
+                      <TableCell style={{ paddingBottom: 0, paddingTop: 0 }} colSpan={9}>
+                        <Collapse in={expandedRows.has(item.reviewRequestId)} timeout="auto" unmountOnExit>
+                          <Box sx={{ margin: 2 }}>
+                            <Typography variant="h6" gutterBottom component="div">
+                              검토 이력
+                            </Typography>
+                            {loadingExecutions.has(item.reviewRequestId) ? (
+                              <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                                <CircularProgress size={24} />
+                              </Box>
+                            ) : executionHistory[item.reviewRequestId]?.length > 0 ? (
+                              <Table size="small">
+                                <TableHead>
+                                  <TableRow>
+                                    <TableCell>검토 번호</TableCell>
+                                    <TableCell>상태</TableCell>
+                                    <TableCell>시작 시간</TableCell>
+                                    <TableCell>완료 시간</TableCell>
+                                    <TableCell>선택된 Pillar</TableCell>
+                                    <TableCell align="center">작업</TableCell>
+                                  </TableRow>
+                                </TableHead>
+                                <TableBody>
+                                  {executionHistory[item.reviewRequestId].map((execution, index) => (
+                                    <TableRow key={execution.executionId}>
+                                      <TableCell>#{executionHistory[item.reviewRequestId].length - index}</TableCell>
+                                      <TableCell>
+                                        <Chip
+                                          label={execution.status === 'Completed' ? '완료' : execution.status === 'In Progress' ? '진행 중' : execution.status}
+                                          color={execution.status === 'Completed' ? 'success' : execution.status === 'In Progress' ? 'info' : 'default'}
+                                          size="small"
+                                          sx={{ borderRadius: '4px' }}
+                                        />
+                                      </TableCell>
+                                      <TableCell>{formatDate(execution.startedAt)}</TableCell>
+                                      <TableCell>{execution.completedAt ? formatDate(execution.completedAt) : '-'}</TableCell>
+                                      <TableCell>{execution.selectedPillars?.length || 0}개</TableCell>
+                                      <TableCell align="center">
+                                        <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
+                                          {execution.status === 'Completed' && (
+                                            <>
+                                              <Tooltip title="결과 보기">
+                                                <IconButton
+                                                  size="small"
+                                                  color="primary"
+                                                  onClick={() => navigate(`/reviews/${execution.executionId}/results`)}
+                                                >
+                                                  <ViewIcon />
+                                                </IconButton>
+                                              </Tooltip>
+                                              <Tooltip title="다운로드">
+                                                <IconButton
+                                                  size="small"
+                                                  color="success"
+                                                  onClick={() => handleDownloadExecutionReport(execution.executionId, item.documentTitle || item.documentId)}
+                                                  disabled={downloading === execution.executionId}
+                                                >
+                                                  {downloading === execution.executionId ? (
+                                                    <CircularProgress size={20} />
+                                                  ) : (
+                                                    <DownloadIcon />
+                                                  )}
+                                                </IconButton>
+                                              </Tooltip>
+                                            </>
+                                          )}
+                                        </Box>
+                                      </TableCell>
+                                    </TableRow>
+                                  ))}
+                                </TableBody>
+                              </Table>
+                            ) : (
+                              <Typography variant="body2" color="text.secondary">
+                                검토 이력이 없습니다.
+                              </Typography>
+                            )}
+                          </Box>
+                        </Collapse>
+                      </TableCell>
+                    </TableRow>
+                  </>
                 ))}
               </TableBody>
             </Table>

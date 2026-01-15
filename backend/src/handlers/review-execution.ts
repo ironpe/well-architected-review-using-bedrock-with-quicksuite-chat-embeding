@@ -129,6 +129,30 @@ export async function executeReviewHandler(
 }
 
 /**
+ * GET /reviews/request/{reviewRequestId}/executions
+ * Get all executions for a review request
+ */
+export async function getReviewExecutionsHandler(
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
+  try {
+    const authContext = await authMiddleware.authenticate(event);
+    authorizationService.requirePermission(authContext.userGroup, 'view:review-results');
+
+    const reviewRequestId = event.pathParameters?.reviewRequestId;
+    if (!reviewRequestId) {
+      throw new ValidationError('reviewRequestId is required');
+    }
+
+    const executions = await reviewExecutionService.getExecutionsByReviewRequest(reviewRequestId);
+
+    return createResponse(200, { executions });
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+/**
  * GET /reviews/{executionId}/status
  * Get review execution status
  * Requirements: 4.5
