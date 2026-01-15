@@ -379,15 +379,21 @@ export function HistoryPage() {
                             </span>
                           </Tooltip>
                         )}
-                        <Tooltip title="삭제">
-                          <IconButton 
-                            size="small" 
-                            color="error"
-                            onClick={() => handleDeleteClick(item)}
-                            disabled={item.status === 'In Review'}
-                          >
-                            <DeleteIcon />
-                          </IconButton>
+                        <Tooltip title={
+                          item.status === 'In Review' ? '검토 중일 때는 삭제 불가' :
+                          item.status === 'Review Completed' ? '검토 완료된 항목은 삭제 불가' :
+                          '삭제'
+                        }>
+                          <span>
+                            <IconButton 
+                              size="small" 
+                              color="error"
+                              onClick={() => handleDeleteClick(item)}
+                              disabled={item.status === 'In Review' || item.status === 'Review Completed'}
+                            >
+                              <DeleteIcon />
+                            </IconButton>
+                          </span>
                         </Tooltip>
                       </Box>
                     </TableCell>
