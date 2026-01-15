@@ -95,7 +95,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           userId: 'mock-user-id',
           email,
           name: email.split('@')[0],
-          group: email.includes('reviewer') ? 'B_Group' : 'A_Group',
+          group: email.includes('reviewer') ? 'Reviewer_Group' : 'Requester_Group',
           cognitoSub: 'mock-sub',
         };
 

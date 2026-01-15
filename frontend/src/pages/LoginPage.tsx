@@ -124,24 +124,24 @@ export function LoginPage() {
               </Typography>
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
-                  제출자 (A_Group)
+                  제출자 (Requester_Group)
                 </Typography>
                 <Typography variant="body2" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
-                  이메일: submitter@example.com
+                  이메일: requester@example.com
                 </Typography>
                 <Typography variant="body2" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
-                  패스워드: Submitter123!
+                  패스워드: TempPass123! (첫 로그인 시 변경)
                 </Typography>
               </Box>
               <Box>
                 <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
-                  검토자 (B_Group)
+                  검토자 (Reviewer_Group)
                 </Typography>
                 <Typography variant="body2" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
                   이메일: reviewer@example.com
                 </Typography>
                 <Typography variant="body2" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
-                  패스워드: Reviewer123!
+                  패스워드: TempPass123! (첫 로그인 시 변경)
                 </Typography>
               </Box>
             </Paper>

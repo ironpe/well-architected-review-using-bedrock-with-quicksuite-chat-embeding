@@ -46,7 +46,7 @@ export function Header({ isAuthenticated, userGroup, userEmail, onLogout, onChat
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             {userGroup && (
               <Chip
-                label={userGroup === 'A_Group' ? '제출자' : '검토자'}
+                label={userGroup === 'Requester_Group' ? '제출자' : '검토자'}
                 size="small"
                 sx={{ 
                   bgcolor: 'rgba(255,255,255,0.15)',

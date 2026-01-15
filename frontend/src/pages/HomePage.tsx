@@ -46,7 +46,7 @@ export function HomePage() {
     },
   ];
 
-  const cards = user?.group === 'A_Group' ? aGroupCards : user?.group === 'B_Group' ? bGroupCards : [];
+  const cards = user?.group === 'Requester_Group' ? aGroupCards : user?.group === 'Reviewer_Group' ? bGroupCards : [];
 
   return (
     <Box>
@@ -65,9 +65,9 @@ export function HomePage() {
           환영합니다, {user?.name}님
         </Typography>
         <Typography variant="h6" sx={{ opacity: 0.95, fontWeight: 400, fontSize: '1.125rem' }}>
-          {user?.group === 'A_Group'
+          {user?.group === 'Requester_Group'
             ? '아키텍처 문서를 업로드하고 전문가의 검토를 받으세요.'
-            : user?.group === 'B_Group'
+            : user?.group === 'Reviewer_Group'
             ? 'AWS Well-Architected Framework 기반으로 아키텍처를 검토하세요.'
             : 'Architecture Review System에 오신 것을 환영합니다.'}
         </Typography>
@@ -106,12 +106,12 @@ export function HomePage() {
                   variant="contained"
                   size="medium"
                   sx={{
-                    bgcolor: user?.group === 'A_Group' ? '#00467F' : '#E31837',
+                    bgcolor: user?.group === 'Requester_Group' ? '#00467F' : '#E31837',
                     px: 3,
                     py: 1,
                     fontWeight: 600,
                     '&:hover': {
-                      bgcolor: user?.group === 'A_Group' ? '#003366' : '#B71C1C',
+                      bgcolor: user?.group === 'Requester_Group' ? '#003366' : '#B71C1C',
                     }
                   }}
                 >

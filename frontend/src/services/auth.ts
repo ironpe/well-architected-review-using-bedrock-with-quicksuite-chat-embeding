@@ -108,14 +108,14 @@ export class AuthService {
    * Get user group from Cognito groups
    */
   private getUserGroup(groups: string[]): UserGroup {
-    if (groups.includes('B_Group')) {
-      return 'B_Group';
+    if (groups.includes('Reviewer_Group')) {
+      return 'Reviewer_Group';
     }
-    if (groups.includes('A_Group')) {
-      return 'A_Group';
+    if (groups.includes('Requester_Group')) {
+      return 'Requester_Group';
     }
-    // Default to A_Group if no group assigned
-    return 'A_Group';
+    // Default to Requester_Group if no group assigned
+    return 'Requester_Group';
   }
 }
 

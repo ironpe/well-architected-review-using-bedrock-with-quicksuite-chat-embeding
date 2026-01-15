@@ -12,7 +12,7 @@ export type PillarName =
   | 'Cost Optimization'
   | 'Sustainability';
 
-export type UserGroup = 'A_Group' | 'B_Group';
+export type UserGroup = 'Requester_Group' | 'Reviewer_Group';
 
 export type ExecutionStatus = 'Pending' | 'In Progress' | 'Completed' | 'Failed';
 

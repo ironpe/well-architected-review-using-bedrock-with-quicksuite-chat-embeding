@@ -278,7 +278,46 @@ cd ..
 ./scripts/update-env-from-cdk.sh
 ```
 
-### 5. Frontend 빌드 (프로덕션)
+### 5. Cognito 사용자 생성
+CDK 배포 시 User Pool은 생성되지만 사용자는 생성되지 않습니다. AWS CLI로 테스트 사용자를 생성합니다.
+
+```bash
+# User Pool ID 조회
+USER_POOL_ID=$(aws cloudformation describe-stacks --stack-name ArchReview-Minimal \
+  --query 'Stacks[0].Outputs[?OutputKey==`UserPoolIdOutput`].OutputValue' --output text --region us-east-1)
+
+# Requester 사용자 생성 (A_Group)
+aws cognito-idp admin-create-user \
+  --user-pool-id $USER_POOL_ID \
+  --username requester@example.com \
+  --user-attributes Name=email,Value=requester@example.com Name=email_verified,Value=true \
+  --temporary-password TempPass123! \
+  --region us-east-1
+
+aws cognito-idp admin-add-user-to-group \
+  --user-pool-id $USER_POOL_ID \
+  --username requester@example.com \
+  --group-name Requester_Group \
+  --region us-east-1
+
+# Reviewer 사용자 생성 (Reviewer_Group)
+aws cognito-idp admin-create-user \
+  --user-pool-id $USER_POOL_ID \
+  --username reviewer@example.com \
+  --user-attributes Name=email,Value=reviewer@example.com Name=email_verified,Value=true \
+  --temporary-password TempPass123! \
+  --region us-east-1
+
+aws cognito-idp admin-add-user-to-group \
+  --user-pool-id $USER_POOL_ID \
+  --username reviewer@example.com \
+  --group-name Reviewer_Group \
+  --region us-east-1
+```
+
+> 💡 첫 로그인 시 임시 비밀번호를 변경해야 합니다.
+
+### 6. Frontend 빌드 (프로덕션)
 ```bash
 cd frontend
 npm run build

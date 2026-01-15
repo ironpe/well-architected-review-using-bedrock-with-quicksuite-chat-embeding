@@ -34,7 +34,7 @@ export function Sidebar({ userGroup, open }: SidebarProps) {
     { text: '거버넌스 정책', icon: <PolicyIcon />, path: '/admin/policies' },
   ];
 
-  const menuItems = userGroup === 'A_Group' ? aGroupMenuItems : userGroup === 'B_Group' ? bGroupMenuItems : [];
+  const menuItems = userGroup === 'Requester_Group' ? aGroupMenuItems : userGroup === 'Reviewer_Group' ? bGroupMenuItems : [];
 
   return (
     <Drawer

@@ -140,13 +140,13 @@ export class MinimalArchitectureReviewStack extends cdk.Stack {
 
     new cognito.CfnUserPoolGroup(this, 'AGroup', {
       userPoolId: userPool.userPoolId,
-      groupName: 'A_Group',
+      groupName: 'Requester_Group',
       description: 'Submitters',
     });
 
     new cognito.CfnUserPoolGroup(this, 'BGroup', {
       userPoolId: userPool.userPoolId,
-      groupName: 'B_Group',
+      groupName: 'Reviewer_Group',
       description: 'Reviewers',
     });
 
