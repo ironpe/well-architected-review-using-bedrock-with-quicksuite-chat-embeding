@@ -248,13 +248,17 @@ export function HistoryPage() {
       if (!executionHistory[reviewRequestId]) {
         setLoadingExecutions(prev => new Set(prev).add(reviewRequestId));
         try {
+          console.log('Fetching executions for:', reviewRequestId);
           const result = await api.getReviewExecutions(reviewRequestId);
+          console.log('Executions result:', result);
           setExecutionHistory(prev => ({
             ...prev,
             [reviewRequestId]: result.executions,
           }));
         } catch (err: any) {
-          setError('검토 이력을 불러오는데 실패했습니다');
+          console.error('Failed to fetch executions:', err);
+          console.error('Error response:', err.response?.data);
+          setError(`검토 이력을 불러오는데 실패했습니다: ${err.response?.data?.error || err.message}`);
         } finally {
           setLoadingExecutions(prev => {
             const newSet = new Set(prev);
