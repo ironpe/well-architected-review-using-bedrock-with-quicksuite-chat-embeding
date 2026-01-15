@@ -1,14 +1,9 @@
 # Dependencies
 node_modules/
-package-lock.json
-yarn.lock
 
 # Build outputs
 dist/
 build/
-lib/
-*.js
-*.d.ts
 *.js.map
 *.d.ts.map
 
@@ -57,10 +52,7 @@ frontend/.vite/
 # Backend specific
 backend/dist/
 
-# Infrastructure specific
-infrastructure/lib/*.js
+# Compiled JS output (keep source .ts files)
+infrastructure/lib/lib/
 infrastructure/bin/*.js
-
-# Keep TypeScript files
-!*.ts
-!*.tsx
+infrastructure/bin/*.d.ts
