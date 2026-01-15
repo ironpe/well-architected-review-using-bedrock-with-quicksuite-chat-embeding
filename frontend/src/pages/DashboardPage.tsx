@@ -38,6 +38,7 @@ export function DashboardPage() {
   const [previewUrl, setPreviewUrl] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<ReviewStatus | 'All'>('All');
+  const [reviewCounts, setReviewCounts] = useState<Record<string, number>>({});
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -50,6 +51,19 @@ export function DashboardPage() {
       const result = await api.listReviewRequests();
       // 모든 검토 요청 표시 (필터링 제거)
       setReviews(result.reviewRequests);
+      
+      // Load review counts for each request
+      const counts: Record<string, number> = {};
+      for (const review of result.reviewRequests) {
+        try {
+          const executions = await api.getReviewExecutions(review.reviewRequestId);
+          counts[review.reviewRequestId] = executions.executions?.length || 0;
+        } catch (err) {
+          console.warn(`Failed to load execution count for ${review.reviewRequestId}`);
+          counts[review.reviewRequestId] = 0;
+        }
+      }
+      setReviewCounts(counts);
     } catch (err: any) {
       // Fallback to mock data
       if (err.code === 'ERR_NETWORK' || err.message?.includes('Network Error')) {
@@ -262,8 +276,13 @@ export function DashboardPage() {
                         <strong>제출자:</strong> {review.submitterEmail}
                       </Typography>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
-                        <strong>버전:</strong> v{review.currentVersion}
+                        <strong>문서 버전:</strong> v{review.currentVersion}
                       </Typography>
+                      {reviewCounts[review.reviewRequestId] > 0 && (
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          <strong>검토 횟수:</strong> {reviewCounts[review.reviewRequestId]}회
+                        </Typography>
+                      )}
                       <Typography variant="body2" color="text.secondary" gutterBottom>
                         <strong>요청일:</strong> {formatDate(review.createdAt)}
                       </Typography>
