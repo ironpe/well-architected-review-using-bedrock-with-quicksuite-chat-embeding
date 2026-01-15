@@ -667,8 +667,16 @@ export class MinimalArchitectureReviewStack extends cdk.Stack {
       authorizationType: apigateway.AuthorizationType.COGNITO,
     });
 
-    // Review results endpoint
+    // Review by ID endpoint
     const reviewById = reviews.addResource('{executionId}');
+    
+    // GET /reviews/{executionId} - Get review status
+    reviewById.addMethod('GET', new apigateway.LambdaIntegration(reviewExecutionFn), {
+      authorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+    
+    // Review results endpoint
     const reviewResults = reviewById.addResource('results', {
       defaultCorsPreflightOptions: {
         allowOrigins: apigateway.Cors.ALL_ORIGINS,
