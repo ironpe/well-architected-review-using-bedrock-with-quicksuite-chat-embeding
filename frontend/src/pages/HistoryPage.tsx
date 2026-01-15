@@ -306,7 +306,7 @@ export function HistoryPage() {
                   <TableCell>상태</TableCell>
                   <TableCell>버전</TableCell>
                   <TableCell>생성일</TableCell>
-                  <TableCell>최종 업데이트</TableCell>
+                  <TableCell>최종 검토일</TableCell>
                   <TableCell align="center">작업</TableCell>
                 </TableRow>
               </TableHead>

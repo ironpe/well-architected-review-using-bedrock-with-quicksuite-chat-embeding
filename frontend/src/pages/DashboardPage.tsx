@@ -267,6 +267,11 @@ export function DashboardPage() {
                       <Typography variant="body2" color="text.secondary" gutterBottom>
                         <strong>요청일:</strong> {formatDate(review.createdAt)}
                       </Typography>
+                      {review.executionId && (
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                          <strong>최근 검토:</strong> {formatDate(review.updatedAt)}
+                        </Typography>
+                      )}
                       <Typography variant="body2" color="text.secondary">
                         <strong>ID:</strong> {review.reviewRequestId}
                       </Typography>
