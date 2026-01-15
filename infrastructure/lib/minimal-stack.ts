@@ -171,11 +171,14 @@ export class MinimalArchitectureReviewStack extends cdk.Stack {
       resources: ['*'],
     }));
 
-    // Add Lambda invoke permissions (for PDF converter)
+    // Add Lambda invoke permissions (for PDF converter and worker)
     lambdaRole.addToPolicy(new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: ['lambda:InvokeFunction'],
-      resources: [`arn:aws:lambda:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:function:*PdfConverterFn*`],
+      resources: [
+        `arn:aws:lambda:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:function:*PdfConverterFn*`,
+        `arn:aws:lambda:${cdk.Aws.REGION}:${cdk.Aws.ACCOUNT_ID}:function:*ReviewExecutionWorkerFn*`,
+      ],
     }));
 
     // Add QuickSight permissions
@@ -305,10 +308,10 @@ export class MinimalArchitectureReviewStack extends cdk.Stack {
       layers: [dependenciesLayer],
     });
 
-    // Review execution function
-    const reviewExecutionFn = new lambda.Function(this, 'ReviewExecutionFn', {
+    // Review execution worker function (long-running)
+    const reviewExecutionWorkerFn = new lambda.Function(this, 'ReviewExecutionWorkerFn', {
       runtime: lambda.Runtime.NODEJS_20_X,
-      handler: 'dist/handlers/review-execution-router.handler',
+      handler: 'dist/handlers/review-execution-worker.handler',
       code: lambda.Code.fromAsset(path.join(__dirname, '../../backend'), {
         exclude: ['node_modules', 'lambda-layer', 'src', '*.test.ts', 'test-results', 'uploads'],
       }),
@@ -317,6 +320,23 @@ export class MinimalArchitectureReviewStack extends cdk.Stack {
       timeout: cdk.Duration.minutes(15),
       memorySize: 3008,
       ephemeralStorageSize: cdk.Size.gibibytes(2),
+      layers: [dependenciesLayer],
+    });
+
+    // Review execution function
+    const reviewExecutionFn = new lambda.Function(this, 'ReviewExecutionFn', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'dist/handlers/review-execution-router.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../backend'), {
+        exclude: ['node_modules', 'lambda-layer', 'src', '*.test.ts', 'test-results', 'uploads'],
+      }),
+      role: lambdaRole,
+      environment: {
+        ...lambdaEnv,
+        REVIEW_WORKER_FUNCTION_NAME: reviewExecutionWorkerFn.functionName,
+      },
+      timeout: cdk.Duration.seconds(30), // Short timeout for API responses
+      memorySize: 512,
       layers: [dependenciesLayer],
     });
 
@@ -330,8 +350,8 @@ export class MinimalArchitectureReviewStack extends cdk.Stack {
       memorySize: 512,
     });
 
-    // Add PDF_CONVERTER_FUNCTION_NAME to ReviewExecutionFn environment
-    reviewExecutionFn.addEnvironment('PDF_CONVERTER_FUNCTION_NAME', pdfConverterFn.functionName);
+    // Add PDF_CONVERTER_FUNCTION_NAME to Worker environment
+    reviewExecutionWorkerFn.addEnvironment('PDF_CONVERTER_FUNCTION_NAME', pdfConverterFn.functionName);
 
     // QuickSight embed function
     const quicksightEmbedFn = new lambda.Function(this, 'QuickSightEmbedFn', {

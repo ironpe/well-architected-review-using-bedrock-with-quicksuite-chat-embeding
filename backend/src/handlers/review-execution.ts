@@ -4,6 +4,7 @@
  */
 
 import { APIGatewayProxyEvent, APIGatewayProxyResult } from 'aws-lambda';
+import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
 import { ReviewExecutionService } from '../services/ReviewExecutionService.js';
 import { ReviewService } from '../services/ReviewService.js';
 import { ReportGenerationService } from '../services/ReportGenerationService.js';
@@ -17,6 +18,8 @@ import {
   PillarResult,
   DownloadReportRequest,
 } from '../types/index.js';
+
+const lambdaClient = new LambdaClient({});
 
 const reviewExecutionService = new ReviewExecutionService();
 const reviewService = new ReviewService();
@@ -78,8 +81,8 @@ export async function executeReviewHandler(
     // Verify review request exists
     const reviewRequest = await reviewService.getReviewRequest(request.reviewRequestId);
 
-    // Execute review
-    const executionId = await reviewExecutionService.executeReview({
+    // Create execution record immediately
+    const executionId = await reviewExecutionService.createExecution({
       reviewRequestId: request.reviewRequestId,
       documentId: reviewRequest.documentId,
       versionNumber: reviewRequest.currentVersion,
@@ -89,7 +92,32 @@ export async function executeReviewHandler(
       instructions: request.instructions,
     });
 
-    console.log('Review execution started:', executionId);
+    console.log('Review execution created:', executionId);
+
+    // Invoke worker Lambda asynchronously (don't wait for response)
+    const workerFunctionName = process.env.REVIEW_WORKER_FUNCTION_NAME;
+    if (workerFunctionName) {
+      const payload = {
+        executionId,
+        reviewRequestId: request.reviewRequestId,
+        documentId: reviewRequest.documentId,
+        versionNumber: reviewRequest.currentVersion,
+        selectedPillars: request.pillarSelection,
+        governancePolicyIds: request.governancePolicies,
+        architecturePages: request.architecturePages,
+        instructions: request.instructions,
+      };
+
+      await lambdaClient.send(new InvokeCommand({
+        FunctionName: workerFunctionName,
+        InvocationType: 'Event', // Async invocation
+        Payload: Buffer.from(JSON.stringify(payload)),
+      }));
+
+      console.log('Worker Lambda invoked asynchronously');
+    } else {
+      console.warn('REVIEW_WORKER_FUNCTION_NAME not set, execution will not proceed');
+    }
 
     return createResponse(202, {
       executionId,
