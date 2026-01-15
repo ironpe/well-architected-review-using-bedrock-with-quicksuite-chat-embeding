@@ -213,18 +213,19 @@ cd well-architected-review-using-bedrock-with-quicksuite-chat-embeding
 ### 설치 및 환경 설정
 
 ```bash
-# 1. 의존성 설치
+# 1. 의존성 설치 (각 디렉토리에서 개별 실행)
 npm install
-cd backend && npm install
-cd ../frontend && npm install
-cd ../infrastructure && npm install
-cd ..
+npm install --include=dev -w backend
+npm install -w frontend
+npm install -w infrastructure
 
 # 2. 환경 변수 파일 생성
 cp frontend/.env.example frontend/.env
 cp backend/.env.example backend/.env
 cp infrastructure/.env.example infrastructure/.env
 ```
+
+> 💡 `-w` 옵션은 npm workspace를 지정합니다. backend는 TypeScript 빌드를 위해 `--include=dev` 옵션이 필요합니다.
 
 ### Frontend 개발 서버 실행
 
