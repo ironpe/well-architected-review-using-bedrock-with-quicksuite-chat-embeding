@@ -88,12 +88,16 @@ export class ReviewExecutionService {
       console.warn('Failed to update review request status:', error);
     }
 
-    // Execute review asynchronously (don't wait for completion)
-    this.executeReviewAsync(executionId, params).catch(error => {
-      console.error(`Async execution failed for ${executionId}:`, error);
-    });
+    // Execute review synchronously (Lambda has 15min timeout)
+    // We await the full execution to ensure Lambda keeps running
+    try {
+      await this.executeReviewAsync(executionId, params);
+    } catch (error) {
+      console.error(`Execution failed for ${executionId}:`, error);
+      // Error is already handled in executeReviewAsync
+    }
 
-    // Return immediately
+    // Return execution ID
     return executionId;
   }
 
