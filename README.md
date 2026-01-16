@@ -179,7 +179,7 @@ flowchart TB
 
 시스템 사용 방법과 주요 기능을 확인하세요:
 
-[![데모 비디오](https://img.shields.io/badge/▶️_데모_비디오_보기-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](docs/ArchReviewSystem.mp4)
+[![데모 비디오](https://img.shields.io/badge/▶️_데모_비디오_보기-FF0000?style=for-the-badge&logo=youtube&logoColor=white)](https://youtu.be/eMVK67nhteg)
 
 > 💡 **데모 영상 내용:**
 > - 아키텍처 문서 업로드
@@ -188,8 +188,6 @@ flowchart TB
 > - 6개 Pillar별 분석 결과 확인
 > - Executive Summary 및 리포트 다운로드
 > - QuickSuite Chat Agent를 통한 대화형 조회
-
-> 📹 **비디오 다운로드**: [ArchReviewSystem.mp4](docs/ArchReviewSystem.mp4) (73MB)
 
 ---
 
