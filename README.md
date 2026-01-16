@@ -312,7 +312,23 @@ cd ..
 ```
 
 ### 5. Cognito 사용자 생성
-CDK 배포 시 User Pool은 생성되지만 사용자는 생성되지 않습니다. AWS CLI로 테스트 사용자를 생성합니다.
+
+CDK 배포 시 User Pool은 생성되지만 사용자는 생성되지 않습니다. 스크립트를 실행하여 테스트 사용자를 생성합니다.
+
+**자동 생성 스크립트 (권장):**
+
+```bash
+./scripts/setup-cognito-users.sh
+```
+
+이 스크립트는 다음 사용자를 자동으로 생성합니다:
+- **Requester** (requester@example.com / Requester123!)
+- **Reviewer** (reviewer@example.com / Reviewer123!)
+
+**수동 생성 (선택사항):**
+
+<details>
+<summary>AWS CLI 명령어로 수동 생성하기</summary>
 
 ```bash
 # User Pool ID 조회
@@ -362,7 +378,10 @@ aws cognito-idp admin-add-user-to-group \
   --region us-east-1
 ```
 
-**테스트 계정:**
+</details>
+
+**생성된 테스트 계정:**
+
 | 사용자 | 그룹 | 비밀번호 |
 |--------|------|----------|
 | requester@example.com | Requester_Group | Requester123! |
