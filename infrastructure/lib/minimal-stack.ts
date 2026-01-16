@@ -404,6 +404,7 @@ export class MinimalArchitectureReviewStack extends cdk.Stack {
       environment: lambdaEnv,
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,
+      // Layer 없이 배포 (코드에 모든 의존성 포함)
     });
 
     const api = new apigateway.RestApi(this, 'Api', {
