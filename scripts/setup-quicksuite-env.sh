@@ -126,7 +126,7 @@ echo -e "${YELLOW}[2/3] Backend 빌드 중...${NC}"
 # Backend 빌드
 cd backend
 npm run build
-./package-simple.sh
+./package-mcp.sh
 cd ..
 
 echo -e "${GREEN}✅ Backend 빌드 완료${NC}"

@@ -10,7 +10,7 @@
 
 ```bash
 # 1. 백엔드 빌드 및 CDK 배포
-cd backend && npm run build && ./package-simple.sh
+cd backend && npm run build && ./package-mcp.sh
 cd ../infrastructure && npx cdk deploy
 
 # 2. Cognito 설정 (프로젝트 루트에서 실행)
