@@ -193,8 +193,13 @@ flowchart TB
 ### 사전 요구사항
 - Node.js 18 이상
 - Python 3.11 이상
-- AWS CLI 설정 완료
+- AWS CLI 설치 및 자격 증명 설정
+  - 설치: https://aws.amazon.com/cli/
+  - IAM 사용자 Access Key 필요 (AdministratorAccess 권한 권장)
 - AWS CDK CLI: `npm install -g aws-cdk`
+- AWS 계정에서 Amazon Bedrock 모델 접근 권한 활성화
+  - Bedrock 콘솔 → Model access → Enable specific models
+  - 필요 모델: Claude, Nova (Vision 모델)
 
 ### 프로젝트 다운로드
 
@@ -213,6 +218,16 @@ cd well-architected-review-using-bedrock-with-quicksuite-chat-embeding
 ### 설치 및 환경 설정
 
 ```bash
+# 0. AWS CLI 설정 (최초 1회)
+aws configure
+# AWS Access Key ID 입력
+# AWS Secret Access Key 입력
+# Default region name: us-east-1 (권장)
+# Default output format: json
+
+# AWS CLI 설정 확인
+aws sts get-caller-identity
+
 # 1. 의존성 설치
 npm install
 cd backend && npm install && cd ..
