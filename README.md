@@ -483,7 +483,7 @@ npx cdk deploy
 배포 후 MCP Lambda ARN이 출력됩니다:
 ```
 Outputs:
-ArchitectureReviewStack.McpServerFunctionArn = arn:aws:lambda:us-east-1:...
+ArchReview-Minimal.McpServerFunctionArn = arn:aws:lambda:us-east-1:...
 ```
 
 #### 2단계: Cognito M2M 클라이언트 설정
@@ -532,7 +532,7 @@ QuickSuite 콘솔에서 수동으로 MCP Action을 등록합니다.
 | 필드 | 값 |
 |------|-----|
 | Name | `Architecture Review Data MCP` |
-| Description | `DynamoDB에서 아키텍처 리뷰 데이터를 조회하는 MCP 도구 모음. 리뷰 요청, 문서, 실행 결과, Pillar 설정, 거버넌스 정책을 조회할 수 있습니다.` |
+| Description | `MCP toolkit for querying architecture review data in DynamoDB. It allows you to view review requests, documents, execution results, Pillar settings, and governance policies.` |
 | MCP server endpoint | `infrastructure/.env.agentcore`의 `GATEWAY_URL` 값 |
 | Authentification method | `Service authentication` |
 | Authentification type | `Service-to-service OAuth` |

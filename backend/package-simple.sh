@@ -4,19 +4,18 @@ set -e
 echo "🚀 Lambda 패키징 시작..."
 rm -f lambda-code.zip
 
-echo "📦 ZIP 생성 중..."
+echo "📦 ZIP 생성 중 (dist + package.json)..."
 zip -r lambda-code.zip dist/ package.json -q
 
-echo "📦 node_modules 추가 중..."
+echo "📦 node_modules 추가 중 (루트에서)..."
 cd ..
-zip -r backend/lambda-code.zip node_modules/@aws-sdk -q
-zip -r backend/lambda-code.zip node_modules/@smithy -q
-zip -r backend/lambda-code.zip node_modules/uuid -q
-zip -r backend/lambda-code.zip node_modules/jszip -q
-zip -r backend/lambda-code.zip node_modules/docx -q
-zip -r backend/lambda-code.zip node_modules/pdfkit -q
-zip -r backend/lambda-code.zip node_modules/tslib -q
-cd backend
+if [ -d "node_modules" ]; then
+  zip -r backend/lambda-code.zip node_modules/ -q
+  cd backend
+else
+  echo "⚠️  node_modules 폴더가 없습니다. npm install을 먼저 실행하세요."
+  exit 1
+fi
 
 SIZE=$(ls -lh lambda-code.zip | awk '{print $5}')
 echo "✅ 완료: lambda-code.zip ($SIZE)"

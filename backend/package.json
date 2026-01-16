@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Backend Lambda functions for Architecture Review System",
   "main": "dist/index.js",
-  "type": "module",
   "scripts": {
     "build": "tsc",
     "watch": "tsc --watch",

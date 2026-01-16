@@ -1,7 +1,7 @@
 {
   "compilerOptions": {
     "target": "ES2022",
-    "module": "ES2022",
+    "module": "CommonJS",
     "lib": ["ES2022"],
     "moduleResolution": "node",
     "rootDir": "./src",
@@ -24,5 +24,5 @@
     }
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "**/*.test.ts", "src/local-agent-test.ts", "src/review-*.ts"]
+  "exclude": ["node_modules", "dist", "**/*.test.ts", "src/local-agent-test.ts", "src/local-server.ts", "src/review-*.ts"]
 }

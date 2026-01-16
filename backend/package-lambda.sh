@@ -30,6 +30,8 @@ cp -r ../node_modules/jszip "$TEMP_DIR/node_modules/" 2>/dev/null || true
 cp -r ../node_modules/docx "$TEMP_DIR/node_modules/" 2>/dev/null || true
 cp -r ../node_modules/pdfkit "$TEMP_DIR/node_modules/" 2>/dev/null || true
 cp -r ../node_modules/tslib "$TEMP_DIR/node_modules/" 2>/dev/null || true
+cp -r ../node_modules/mnemonist "$TEMP_DIR/node_modules/" 2>/dev/null || true
+cp -r ../node_modules/obliterator "$TEMP_DIR/node_modules/" 2>/dev/null || true
 
 cd "$TEMP_DIR"
 zip -r lambda-code.zip . -q -x "*.map" "*.md" "*.txt" "*/test/*" "*/tests/*" "*/docs/*" "*/examples/*"

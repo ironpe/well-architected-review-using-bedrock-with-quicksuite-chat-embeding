@@ -247,7 +247,7 @@ aws logs tail /aws/lambda/<MCP_LAMBDA_FUNCTION_NAME> --follow
 |------|------|
 | `backend/src/mcp-server/lambda.ts` | MCP Lambda 핸들러 |
 | `backend/src/mcp-server/tools.ts` | MCP 도구 정의 |
-| `infrastructure/lib/architecture-review-stack.ts` | CDK 스택 |
+| `infrastructure/lib/minimal-stack.ts` | CDK 스택 |
 | `infrastructure/.env.agentcore` | 설정 정보 (배포 후 생성) |
 | `scripts/setup-agentcore-cognito.sh` | Cognito 설정 스크립트 |
 | `scripts/setup-agentcore-gateway.sh` | Gateway 설정 스크립트 (AWS CLI 사용) |

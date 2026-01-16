@@ -216,8 +216,8 @@ export class MinimalArchitectureReviewStack extends cdk.Stack {
       // QuickSight configuration (optional)
       QUICKSIGHT_ACCOUNT_ID: cdk.Aws.ACCOUNT_ID,
       QUICKSIGHT_NAMESPACE: 'default',
-      QUICKSIGHT_AGENT_ID: '',  // QuickSight Chat Agent ID (README의 QuickSuite MCP 연동 후 설정)
-      QUICKSIGHT_USER_NAME: '',  // QuickSight 사용자 이름 (README의 QuickSuite MCP 연동 후 설정)
+      QUICKSIGHT_AGENT_ID: 'bea6272a-c328-466a-89d5-e2368460f32d',  // QuickSight Chat Agent ID (README의 QuickSuite MCP 연동 후 설정)
+      QUICKSIGHT_USER_NAME: 'admin/ironpe-Isengard',  // QuickSight 사용자 이름 (README의 QuickSuite MCP 연동 후 설정)
     };
 
     // Lambda Layer with dependencies
@@ -393,6 +393,17 @@ export class MinimalArchitectureReviewStack extends cdk.Stack {
       timeout: cdk.Duration.seconds(10),
       memorySize: 256,
       layers: [dependenciesLayer],
+    });
+
+    // MCP Server function for QuickSuite Chat Agent
+    const mcpServerFn = new lambda.Function(this, 'McpServerFn', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'dist/mcp-server/lambda.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../backend/lambda-code.zip')),
+      role: lambdaRole,
+      environment: lambdaEnv,
+      timeout: cdk.Duration.seconds(30),
+      memorySize: 512,
     });
 
     const api = new apigateway.RestApi(this, 'Api', {
@@ -871,6 +882,11 @@ export class MinimalArchitectureReviewStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'ReportsBucketOutput', {
       value: reportsBucket.bucketName,
       description: 'Reports Bucket Name',
+    });
+
+    new cdk.CfnOutput(this, 'McpServerFunctionArn', {
+      value: mcpServerFn.functionArn,
+      description: 'MCP Server Lambda Function ARN',
     });
   }
 }
