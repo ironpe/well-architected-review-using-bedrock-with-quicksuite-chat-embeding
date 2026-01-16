@@ -59,7 +59,16 @@ export async function handler(event: any): Promise<any> {
       const toolName = event.toolName || event.name;
       const args = event.arguments || event.input || event;
       const result = await executeTool(toolName as McpToolName, args);
-      return { output: result };
+      
+      // AgentCore Gateway 응답 형식
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2)
+          }
+        ]
+      };
     }
 
     return formatResponse({

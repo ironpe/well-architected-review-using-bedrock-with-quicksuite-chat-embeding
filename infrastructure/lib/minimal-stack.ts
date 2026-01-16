@@ -399,12 +399,14 @@ export class MinimalArchitectureReviewStack extends cdk.Stack {
     const mcpServerFn = new lambda.Function(this, 'McpServerFn', {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'dist/mcp-server/lambda.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../../backend/lambda-code.zip')),
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../backend'), {
+        exclude: ['node_modules', 'lambda-layer', 'src', '*.test.ts', 'test-results', 'uploads', 'pdf-converter', 'fonts', '*.sh', 'layer', 'lambda-code.zip'],
+      }),
       role: lambdaRole,
       environment: lambdaEnv,
       timeout: cdk.Duration.seconds(30),
       memorySize: 512,
-      // Layer 없이 배포 (코드에 모든 의존성 포함)
+      layers: [dependenciesLayer],
     });
 
     const api = new apigateway.RestApi(this, 'Api', {
