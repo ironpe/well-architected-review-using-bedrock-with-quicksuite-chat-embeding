@@ -175,6 +175,22 @@ flowchart TB
 
 ---
 
+## 데모
+
+시스템 사용 방법과 주요 기능을 확인하세요:
+
+https://github.com/user-attachments/assets/ArchReviewSystem.mp4
+
+> 💡 **데모 영상 내용:**
+> - 아키텍처 문서 업로드
+> - Vision AI 모델 선택 및 Pillar 설정
+> - AI 기반 자동 검토 실행
+> - 6개 Pillar별 분석 결과 확인
+> - Executive Summary 및 리포트 다운로드
+> - QuickSuite Chat Agent를 통한 대화형 조회
+
+---
+
 ## 기술 스택
 
 ### Frontend
