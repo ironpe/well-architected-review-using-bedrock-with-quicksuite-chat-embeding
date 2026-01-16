@@ -378,14 +378,14 @@ aws cognito-idp admin-add-user-to-group \
   --region us-east-1
 ```
 
-</details>
-
 **생성된 테스트 계정:**
 
 | 사용자 | 그룹 | 비밀번호 |
 |--------|------|----------|
 | requester@example.com | Requester_Group | Requester123! |
 | reviewer@example.com | Reviewer_Group | Reviewer123! |
+
+</details>
 
 ### 6. Frontend 빌드 (프로덕션일 때만)
 ```bash
@@ -636,7 +636,8 @@ QuickSuite 콘솔에서 수동으로 MCP Action을 등록합니다.
 3. Backend 빌드 및 패키징
 4. CDK 재배포 (Lambda 환경 변수 자동 업데이트)
 
-**수동 설정 (선택사항):**
+<details>
+<summary><b>수동 설정 (선택사항)</b></summary>
 
 스크립트 대신 수동으로 설정하려면:
 
@@ -658,6 +659,8 @@ aws lambda update-function-configuration \
   --region us-east-1
 ```
 
+</details>
+
 **프론트엔드에서 Chat Widget 사용:**
 - 프론트엔드 개발 서버 실행: `cd frontend && npm run dev`
 - 브라우저에서 http://localhost:3000 접속
@@ -665,6 +668,9 @@ aws lambda update-function-configuration \
 - QuickSuite Chat Agent가 임베딩되어 표시됨
 
 ### 설정 확인
+
+<details>
+<summary><b>상세 확인 명령어</b></summary>
 
 ```bash
 # 설정 정보 확인
@@ -680,6 +686,8 @@ aws bedrock-agentcore-control list-gateway-targets \
   --gateway-identifier $(grep GATEWAY_ID infrastructure/.env.agentcore | cut -d= -f2) \
   --region us-east-1
 ```
+
+</details>
 
 ### 테스트
 
