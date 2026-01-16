@@ -536,7 +536,7 @@ Outputs:
 ArchReview-Minimal.McpServerFunctionArn = arn:aws:lambda:us-east-1:011528259648:function:ArchReview-Minimal-McpServerFn...
 ```
 
-> ⚠️ **중요**: MCP Lambda ARN을 메모해두세요. 다음 단계에서 사용됩니다.
+> 💡 **참고**: 다음 단계의 스크립트들이 자동으로 이 ARN을 조회하므로 별도로 메모할 필요 없습니다.
 
 #### 2단계: Cognito M2M 클라이언트 설정
 
