@@ -42,7 +42,7 @@ fi
 
 # AWS 리전 설정
 AWS_REGION=${COGNITO_REGION:-${AWS_REGION:-us-east-1}}
-STACK_NAME=${STACK_NAME:-ArchitectureReviewStack}
+STACK_NAME=${STACK_NAME:-ArchReview-Minimal}
 
 echo -e "\n${YELLOW}[1/6] Cognito User Pool 정보 조회 중...${NC}"
 

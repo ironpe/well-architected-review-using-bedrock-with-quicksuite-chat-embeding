@@ -34,7 +34,7 @@ fi
 
 # 설정
 AWS_REGION=${AWS_REGION:-us-east-1}
-STACK_NAME=${STACK_NAME:-ArchitectureReviewStack}
+STACK_NAME=${STACK_NAME:-ArchReview-Minimal}
 TIMESTAMP=$(date +%Y%m%d-%H%M%S)
 GATEWAY_NAME="arch-review-waf-gateway-${TIMESTAMP}"
 TOOLS_SCHEMA_FILE="scripts/mcp-tools-schema.json"
