@@ -267,16 +267,25 @@ cd ../..
 ```bash
 cd backend
 npm run build
-./prepare-layer.sh  # Lambda Layer 의존성 설치
+
+# Lambda Layer 의존성 설치
+./prepare-layer.sh
 
 # Lambda Layer zip 생성
 cd layer
 zip -r ../lambda-layer/lambda-layer.zip nodejs
 cd ..
 
+# Lambda 함수 패키징 (일반 핸들러용)
 ./package-lambda.sh
+
+# MCP Lambda 패키징 (QuickSuite 연동용 - 선택사항)
+./package-mcp.sh
+
 cd ..
 ```
+
+> 💡 **참고**: QuickSuite MCP 연동을 사용하지 않는다면 `package-mcp.sh`는 건너뛰어도 됩니다.
 
 ### 3. Infrastructure 배포
 ```bash
@@ -465,26 +474,39 @@ DynamoDB Tables (5개)
 | `list_pillar_configs` | Pillar 설정 조회 |
 | `list_governance_policies` | 거버넌스 정책 조회 |
 
+### 사전 요구사항
+
+QuickSuite MCP 연동을 시작하기 전에 다음이 완료되어 있어야 합니다:
+
+- ✅ [배포 가이드](#배포-가이드)의 1~5단계 완료
+- ✅ 시스템이 정상 작동하는지 확인 (리뷰 요청 생성 및 실행 테스트)
+- ✅ AWS CLI `bedrock-agentcore-control` 명령어 사용 가능
+
 ### 설정 단계
 
 #### 1단계: CDK 배포 (MCP Lambda 포함)
+
+> 💡 **참고**: 이미 배포 가이드를 완료했다면 이 단계는 건너뛰어도 됩니다.
 
 ```bash
 # Backend 빌드 및 패키징
 cd backend
 npm run build
-./package-simple.sh
+./package-mcp.sh  # MCP Lambda 전용 패키징 (11MB)
 
 # CDK 배포
 cd ../infrastructure
-npx cdk deploy
+npx cdk deploy ArchReview-Minimal
+cd ..
 ```
 
 배포 후 MCP Lambda ARN이 출력됩니다:
 ```
 Outputs:
-ArchReview-Minimal.McpServerFunctionArn = arn:aws:lambda:us-east-1:...
+ArchReview-Minimal.McpServerFunctionArn = arn:aws:lambda:us-east-1:011528259648:function:ArchReview-Minimal-McpServerFn...
 ```
+
+> ⚠️ **중요**: MCP Lambda ARN을 메모해두세요. 다음 단계에서 사용됩니다.
 
 #### 2단계: Cognito M2M 클라이언트 설정
 
