@@ -1,0 +1,87 @@
+[
+  {
+    "name": "list_review_requests",
+    "description": "아키텍처 리뷰 요청 목록을 조회합니다. 상태별 필터링이 가능합니다.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "limit": {"type": "number", "description": "조회할 최대 개수 (기본값: 20)"},
+        "status": {"type": "string", "description": "리뷰 상태 필터 (Pending Review, In Review, Modification Required, Review Completed, Rejected)"}
+      }
+    }
+  },
+  {
+    "name": "get_review_request",
+    "description": "특정 리뷰 요청의 상세 정보를 조회합니다.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "reviewRequestId": {"type": "string", "description": "리뷰 요청 ID"}
+      },
+      "required": ["reviewRequestId"]
+    }
+  },
+  {
+    "name": "list_documents",
+    "description": "업로드된 아키텍처 문서 목록을 조회합니다.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "limit": {"type": "number", "description": "조회할 최대 개수 (기본값: 20)"},
+        "reviewRequestId": {"type": "string", "description": "특정 리뷰 요청에 연결된 문서만 조회"}
+      }
+    }
+  },
+  {
+    "name": "get_document",
+    "description": "특정 문서의 상세 정보를 조회합니다.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "documentId": {"type": "string", "description": "문서 ID"},
+        "versionNumber": {"type": "number", "description": "문서 버전 번호 (기본값: 1)"}
+      },
+      "required": ["documentId"]
+    }
+  },
+  {
+    "name": "list_review_executions",
+    "description": "리뷰 실행 기록 목록을 조회합니다. AI가 수행한 아키텍처 검토 결과들입니다.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "limit": {"type": "number", "description": "조회할 최대 개수 (기본값: 20)"},
+        "reviewRequestId": {"type": "string", "description": "특정 리뷰 요청의 실행 기록만 조회"}
+      }
+    }
+  },
+  {
+    "name": "get_review_execution",
+    "description": "특정 리뷰 실행의 상세 결과를 조회합니다. Pillar별 분석 결과, 요약, 권장사항이 포함됩니다.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "executionId": {"type": "string", "description": "실행 ID"}
+      },
+      "required": ["executionId"]
+    }
+  },
+  {
+    "name": "list_pillar_configs",
+    "description": "Well-Architected Framework Pillar 설정 목록을 조회합니다.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {}
+    }
+  },
+  {
+    "name": "list_governance_policies",
+    "description": "거버넌스 정책 목록을 조회합니다. 아키텍처 검토 시 참조되는 기업 정책들입니다.",
+    "inputSchema": {
+      "type": "object",
+      "properties": {
+        "limit": {"type": "number", "description": "조회할 최대 개수 (기본값: 20)"}
+      }
+    }
+  }
+]

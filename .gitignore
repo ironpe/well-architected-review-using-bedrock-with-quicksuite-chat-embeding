@@ -56,3 +56,4 @@ backend/dist/
 infrastructure/lib/lib/
 infrastructure/bin/*.js
 infrastructure/bin/*.d.ts
+infrastructure/.env.agentcore
