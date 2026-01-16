@@ -16,10 +16,32 @@ const PILLAR_CONFIGURATIONS_TABLE = process.env.PILLAR_CONFIGURATIONS_TABLE!;
 const GOVERNANCE_POLICIES_TABLE = process.env.GOVERNANCE_POLICIES_TABLE!;
 const REPORTS_BUCKET = process.env.REPORTS_BUCKET!;
 
-export async function handler(event: any): Promise<any> {
+export async function handler(event: any, context?: any): Promise<any> {
   console.log('MCP Lambda invoked:', JSON.stringify(event, null, 2));
+  console.log('Context:', JSON.stringify(context, null, 2));
 
   try {
+    // AgentCore Gateway Lambda Target 호출 (context에서 toolName 추출)
+    if (context?.clientContext?.custom?.bedrockAgentCoreToolName) {
+      const fullToolName = context.clientContext.custom.bedrockAgentCoreToolName;
+      // "arch-review-waf-tools___list_documents" → "list_documents"
+      const toolName = fullToolName.includes('___') 
+        ? fullToolName.split('___')[1] 
+        : fullToolName;
+      
+      const result = await executeTool(toolName as McpToolName, event || {});
+      
+      // AgentCore Gateway 응답 형식
+      return {
+        content: [
+          {
+            type: 'text',
+            text: JSON.stringify(result, null, 2)
+          }
+        ]
+      };
+    }
+
     // MCP Protocol 처리
     const body = typeof event.body === 'string' ? JSON.parse(event.body) : event.body || event;
     const { method, params, id } = body;
