@@ -572,7 +572,7 @@ QuickSuite 콘솔에서 수동으로 MCP Action을 등록합니다.
 ```
 
 이 스크립트는 다음을 수행합니다:
-1. Agent ID와 QuickSight 사용자 이름 입력 받기
+1. Account ID, Agent ID와 QuickSight 사용자 이름 입력 받기
 2. CDK 스택 파일 업데이트
 3. Backend 빌드 및 패키징
 4. CDK 재배포 (Lambda 환경 변수 자동 업데이트)
