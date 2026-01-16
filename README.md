@@ -208,9 +208,9 @@ flowchart TB
   - 설치: https://aws.amazon.com/cli/
   - IAM 사용자 Access Key 필요 (AdministratorAccess 권한 권장)
 - AWS CDK CLI: `npm install -g aws-cdk`
-- AWS 계정에서 Amazon Bedrock 모델 접근 권한 활성화
-  - Bedrock 콘솔 → Model access → Enable specific models
-  - 필요 모델: Claude, Nova (Vision 모델)
+- AWS 계정에서 Amazon Bedrock 사용 가능
+  - 2025년 10월부터 모든 serverless 모델이 자동으로 활성화됨
+  - Anthropic Claude 모델은 최초 사용 시 일회성 사용 동의 필요 ([콘솔에서 확인](https://console.aws.amazon.com/bedrock/))
 
 ### 프로젝트 다운로드
 
