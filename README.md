@@ -530,14 +530,6 @@ npx cdk deploy ArchReview-Minimal
 cd ..
 ```
 
-배포 후 MCP Lambda ARN이 출력됩니다:
-```
-Outputs:
-ArchReview-Minimal.McpServerFunctionArn = arn:aws:lambda:us-east-1:011528259648:function:ArchReview-Minimal-McpServerFn...
-```
-
-> 💡 **참고**: 다음 단계의 스크립트들이 자동으로 이 ARN을 조회하므로 별도로 메모할 필요 없습니다.
-
 #### 2단계: Cognito M2M 클라이언트 설정
 
 AgentCore Gateway 인증을 위한 Cognito 설정:
