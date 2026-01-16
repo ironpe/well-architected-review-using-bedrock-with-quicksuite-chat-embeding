@@ -722,7 +722,6 @@ QuickSuite Chat Agent에서 다음과 같이 테스트:
 
 ### 관련 문서
 
-- `docs/MCP-LAMBDA-SETUP-PLAN.md` - 전체 설정 계획
 - `docs/QUICKSUITE-MCP-REGISTRATION.md` - QuickSuite 등록 상세 가이드
 
 ---
