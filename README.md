@@ -179,7 +179,12 @@ flowchart TB
 
 시스템 사용 방법과 주요 기능을 확인하세요:
 
-[![Architecture Review System Demo](https://img.youtube.com/vi/eMVK67nhteg/maxresdefault.jpg)](https://youtu.be/eMVK67nhteg)
+<div align="center">
+  <a href="https://youtu.be/eMVK67nhteg">
+    <img src="https://img.youtube.com/vi/eMVK67nhteg/0.jpg" alt="Architecture Review System Demo" style="width:80%;">
+  </a>
+  <p><b>🎬 <a href="https://youtu.be/eMVK67nhteg">YouTube에서 데모 비디오 보기</a></b></p>
+</div>
 
 > 💡 **데모 영상 내용:**
 > - 아키텍처 문서 업로드
@@ -188,8 +193,6 @@ flowchart TB
 > - 6개 Pillar별 분석 결과 확인
 > - Executive Summary 및 리포트 다운로드
 > - QuickSuite Chat Agent를 통한 대화형 조회
-
-> 🎬 **[YouTube에서 보기](https://youtu.be/eMVK67nhteg)**
 
 ---
 
