@@ -209,6 +209,28 @@ fi
 # 임시 파일 삭제
 rm -f $TARGET_CONFIG_FILE $CREDENTIAL_CONFIG_FILE
 
+echo -e "\n${YELLOW}[5.5/6] Lambda 호출 권한 추가 중...${NC}"
+
+# Gateway ARN 생성
+GATEWAY_ARN="arn:aws:bedrock-agentcore:${AWS_REGION}:${AWS_ACCOUNT_ID}:gateway/${GATEWAY_ID}"
+
+# Lambda에 Gateway 호출 권한 추가
+STATEMENT_ID="AllowAgentCoreGateway-$(date +%s)"
+aws lambda add-permission \
+  --function-name "$MCP_LAMBDA_ARN" \
+  --statement-id "$STATEMENT_ID" \
+  --action "lambda:InvokeFunction" \
+  --principal "bedrock.amazonaws.com" \
+  --source-arn "$GATEWAY_ARN" \
+  --region $AWS_REGION \
+  --output text > /dev/null 2>&1
+
+if [ $? -eq 0 ]; then
+    echo -e "${GREEN}✓ Lambda 호출 권한 추가됨${NC}"
+else
+    echo -e "${YELLOW}⚠️  Lambda 권한 추가 실패 (이미 존재할 수 있음)${NC}"
+fi
+
 echo -e "\n${YELLOW}[6/6] 설정 정보 저장 중...${NC}"
 
 # Gateway 설정 추가
