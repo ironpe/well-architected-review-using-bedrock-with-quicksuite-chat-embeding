@@ -505,7 +505,6 @@ MCP Lambda를 외부에서 호출할 수 있도록 Gateway 설정:
 **참고**: 
 - AWS CLI `bedrock-agentcore-control` 명령어를 사용합니다
 - Tool Schema는 `scripts/mcp-tools-schema.json` 파일에서 로드됩니다
-- 매 실행마다 새로운 Gateway가 생성됩니다 (기존 Gateway 재사용 안함)
 
 #### 4단계: QuickSuite MCP Action 등록
 
