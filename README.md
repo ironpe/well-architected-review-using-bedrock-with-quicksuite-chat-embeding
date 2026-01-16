@@ -510,15 +510,17 @@ MCP Lambda를 외부에서 호출할 수 있도록 Gateway 설정:
 
 QuickSuite 콘솔에서 수동으로 MCP Action을 등록합니다.
 
-1. **QuickSight 콘솔** → Manage QuickSight → Integrations
-2. **Add MCP action** 클릭
+1. **QuickSight 콘솔** → Integrations → Actions
+2. **Model Context Protocol +** 클릭
 3. 다음 정보 입력:
 
 | 필드 | 값 |
 |------|-----|
 | Name | `Architecture Review Data MCP` |
-| URL | `infrastructure/.env.agentcore`의 `GATEWAY_URL` 값 |
-| Auth Type | `Service authentication (2LO)` |
+| Description | `DynamoDB에서 아키텍처 리뷰 데이터를 조회하는 MCP 도구 모음. 리뷰 요청, 문서, 실행 결과, Pillar 설정, 거버넌스 정책을 조회할 수 있습니다.` |
+| MCP server endpoint | `infrastructure/.env.agentcore`의 `GATEWAY_URL` 값 |
+| Authentification method | `Service authentication` |
+| Authentification type | `Service-to-service OAuth` |
 | Client ID | `infrastructure/.env.agentcore`의 `AGENTCORE_CLIENT_ID` 값 |
 | Client Secret | `infrastructure/.env.agentcore`의 `AGENTCORE_CLIENT_SECRET` 값 |
 | Token URL | `infrastructure/.env.agentcore`의 `COGNITO_TOKEN_URL` 값 |
@@ -527,19 +529,20 @@ QuickSuite 콘솔에서 수동으로 MCP Action을 등록합니다.
 
 #### 5단계: QuickSuite Space 생성 및 MCP Action 연결
 
-1. **QuickSight 콘솔** → Spaces → Create space
+1. **QuickSuite 콘솔** → Spaces → Create space
 2. 다음 정보 입력:
    - **Space name**: `Architecture Review Space`
-   - **Description**: 아키텍처 검토를 위한 작업 공간
+   - **Description**: `아키텍처 검토를 위한 작업 공간`
 3. **Knowledge bases** 섹션에서 S3 Knowledge Base 추가 (선택사항):
    - S3 버킷에 거버넌스 정책 문서가 있는 경우 연결
 4. **Actions** 섹션에서:
+   - Add actions 버튼 클릭
    - 4단계에서 생성한 `Architecture Review Data MCP` 선택
-5. **Create** 클릭
+5. **Add** 클릭
 
 #### 6단계: QuickSuite Chat Agent 생성
 
-1. **QuickSight 콘솔** → Chat agents → Create chat agent
+1. **QuickSuite 콘솔** → Chat agents → Create chat agent
 2. **Skip** 클릭 (템플릿 사용 안함)
 3. 다음 정보 입력:
    - **Name**: `Architecture Review Agent`
@@ -552,35 +555,55 @@ QuickSuite 콘솔에서 수동으로 MCP Action을 등록합니다.
 4. **Link spaces** 클릭 → 5단계에서 생성한 Space 선택 → **Link**
 5. **Link actions** 클릭 → `Architecture Review Data MCP` 선택 → **Link**
 6. **Welcome message**: `안녕하세요! 아키텍처 리뷰 에이전트입니다.`
+7. **Suggested prompts**:
+   - `아키텍처 리뷰 목록 보여줘`
+   - `최근 문서에 대한 리뷰 결과 보여줘`
 7. **Launch chat agent** 클릭
 8. **Agent ID 복사** (URL에서 확인: `.../agents/{AGENT_ID}/`)
 
 #### 7단계: 프론트엔드 Chat Agent 임베딩 설정
 
-6단계에서 복사한 Agent ID를 사용하여 Lambda 환경 변수를 설정합니다.
+6단계에서 복사한 Agent ID를 사용하여 Lambda 환경 변수를 설정하고 백엔드를 재배포합니다.
 
-1. **Lambda 환경 변수 업데이트**:
-   ```bash
-   # QuickSight Embed Handler Lambda 함수 이름 확인
-   QUICKSIGHT_LAMBDA=$(aws lambda list-functions \
-     --query "Functions[?contains(FunctionName, 'QuickSightEmbedHandler')].FunctionName" \
-     --output text --region us-east-1)
+**자동 설정 스크립트 실행:**
 
-   # Lambda 환경 변수 업데이트
-   aws lambda update-function-configuration \
-     --function-name "$QUICKSIGHT_LAMBDA" \
-     --environment "Variables={
-       QUICKSIGHT_ACCOUNT_ID=YOUR_ACCOUNT_ID,
-       QUICKSIGHT_AGENT_ARN=arn:aws:quicksight:us-east-1:YOUR_ACCOUNT_ID:agent/YOUR_AGENT_ID,
-       QUICKSIGHT_NAMESPACE=default,
-       QUICKSIGHT_USER_NAME=YOUR_QUICKSIGHT_USER
-     }" \
-     --region us-east-1
-   ```
+```bash
+./scripts/setup-quicksuite-env.sh
+```
 
-2. **프론트엔드에서 Chat Widget 사용**:
-   - 우측 하단 채팅 버튼 클릭
-   - QuickSuite Chat Agent가 임베딩되어 표시됨
+이 스크립트는 다음을 수행합니다:
+1. Agent ID와 QuickSight 사용자 이름 입력 받기
+2. CDK 스택 파일 업데이트
+3. Backend 빌드 및 패키징
+4. CDK 재배포 (Lambda 환경 변수 자동 업데이트)
+
+**수동 설정 (선택사항):**
+
+스크립트 대신 수동으로 설정하려면:
+
+```bash
+# QuickSight Embed Handler Lambda 함수 이름 확인
+QUICKSIGHT_LAMBDA=$(aws lambda list-functions \
+  --query "Functions[?contains(FunctionName, 'QuickSightEmbedHandler')].FunctionName" \
+  --output text --region us-east-1)
+
+# Lambda 환경 변수 업데이트
+aws lambda update-function-configuration \
+  --function-name "$QUICKSIGHT_LAMBDA" \
+  --environment "Variables={
+    QUICKSIGHT_ACCOUNT_ID=YOUR_ACCOUNT_ID,
+    QUICKSIGHT_AGENT_ID=YOUR_AGENT_ID,
+    QUICKSIGHT_NAMESPACE=default,
+    QUICKSIGHT_USER_NAME=YOUR_QUICKSIGHT_USER
+  }" \
+  --region us-east-1
+```
+
+**프론트엔드에서 Chat Widget 사용:**
+- 프론트엔드 개발 서버 실행: `cd frontend && npm run dev`
+- 브라우저에서 http://localhost:3000 접속
+- 우측 하단 채팅 버튼 클릭
+- QuickSuite Chat Agent가 임베딩되어 표시됨
 
 ### 설정 확인
 

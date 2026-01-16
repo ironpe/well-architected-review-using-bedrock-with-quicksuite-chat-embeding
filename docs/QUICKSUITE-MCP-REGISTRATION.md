@@ -57,14 +57,13 @@ cat infrastructure/.env.agentcore
 ### Step 1: QuickSuite 콘솔 접속
 
 1. AWS 콘솔에서 **Amazon QuickSight** 서비스로 이동
-2. 우측 상단 사용자 아이콘 클릭 → **Manage QuickSight** 선택
-3. 좌측 메뉴에서 **Integrations** 클릭
+2. 좌측 메뉴에서 **Integrations** 클릭
 
 ### Step 2: MCP Action 추가
 
 1. **Actions** 탭 선택
 2. **Model Context Protocol** 섹션 찾기
-3. **Add MCP action** 버튼 클릭
+3. **+** 버튼 클릭
 
 ### Step 3: 기본 정보 입력
 
@@ -77,11 +76,12 @@ cat infrastructure/.env.agentcore
 
 | 필드 | 값 |
 |------|-----|
-| URL | `https://<GATEWAY_ID>.gateway.bedrock-agentcore.<REGION>.amazonaws.com/mcp` |
+| MCP server endpoint | `https://<GATEWAY_ID>.gateway.bedrock-agentcore.<REGION>.amazonaws.com/mcp` |
 
 ### Step 5: 인증 설정
 
-1. **Authentication type** 선택: `Service authentication (2LO)`
+1. **Authentication method** 선택: `Service authentication`
+2. **Authentification type** 선택: `Service-to-service OAuth` |
 
 2. 다음 값들을 입력 (`infrastructure/.env.agentcore`에서 확인):
 
@@ -93,9 +93,9 @@ cat infrastructure/.env.agentcore
 
 ### Step 6: 저장 및 확인
 
-1. **Save** 버튼 클릭
+1. **Create and continue** 버튼 클릭
 2. MCP Action이 목록에 추가되었는지 확인
-3. Status가 **Active**인지 확인
+3. Status가 **Available**인지 확인
 
 ---
 
