@@ -180,10 +180,10 @@ flowchart TB
 시스템 사용 방법과 주요 기능을 확인하세요:
 
 <div align="center">
-  <a href="https://youtu.be/eMVK67nhteg">
-    <img src="https://img.youtube.com/vi/eMVK67nhteg/0.jpg" alt="Architecture Review System Demo" style="width:80%;">
+  <a href="https://youtu.be/JHbMzX1kpbg">
+    <img src="https://img.youtube.com/vi/JHbMzX1kpbg/0.jpg" alt="Architecture Review System Demo" style="width:80%;">
   </a>
-  <p><b>🎬 <a href="https://youtu.be/eMVK67nhteg">YouTube에서 데모 비디오 보기</a></b></p>
+  <p><b>🎬 <a href="https://youtu.be/JHbMzX1kpbg">YouTube에서 데모 비디오 보기</a></b></p>
 </div>
 
 > 💡 **데모 영상 내용:**
