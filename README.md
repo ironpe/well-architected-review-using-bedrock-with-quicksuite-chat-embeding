@@ -283,6 +283,268 @@ npm run dev
 > Backend는 AWS Lambda로 실행되므로 로컬 개발 서버가 필요하지 않습니다.  
 > 배포 후 `./scripts/update-env-from-cdk.sh`를 실행하면 환경 변수가 자동 업데이트됩니다.
 
+**동작 방식**:
+1. Node.js Lambda가 Python Lambda 호출
+2. Python Lambda가 S3에서 PDF 다운로드
+3. PyMuPDF로 지정 페이지를 PNG로 변환
+4. Base64로 인코딩하여 반환
+5. Node.js Lambda가 Claude Vision 분석
+
+---
+
+## 핵심 코드
+
+시스템의 주요 기능을 구현하는 핵심 코드입니다.
+
+### 1. 아키텍처 다이어그램 Vision 분석
+
+**파일**: `backend/src/services/AgentOrchestrationService.ts`
+
+PDF 문서에서 아키텍처 다이어그램을 추출하고 Vision AI로 분석합니다.
+
+<details>
+<summary><b>핵심 코드 보기</b></summary>
+
+```typescript
+// Step 1: PDF에서 페이지 추출
+const pageBuffer = await this.novaAnalyzer.extractPdfPage(buffer, pageNum);
+
+// Step 2: 모델별 처리
+const isClaude = modelId.includes('claude');
+
+if (isClaude) {
+  // Claude는 PDF 직접 처리 불가 → PNG 변환
+  console.log(`Converting page ${pageNum} to image for Claude...`);
+  imageBuffer = await this.pdfToImageService.convertPdfPageToImage(
+    pageBuffer,
+    pageNum,
+    document.s3Bucket,
+    document.s3Key,
+    150  // DPI
+  );
+  
+  // Claude Vision으로 이미지 분석
+  primaryAnalysis = await this.analyzeImageWithVision(
+    imageBuffer,
+    'image/png',
+    modelId,
+    maxTokens,
+    temperature,
+    systemPrompt
+  );
+} else {
+  // Nova/Mistral은 PDF 직접 처리 가능
+  console.log(`Analyzing page ${pageNum} with Vision model (PDF direct)...`);
+  primaryAnalysis = await this.novaAnalyzer.analyzePageWithNova(
+    pageBuffer,
+    pageNum,
+    modelId,
+    maxTokens,
+    temperature,
+    systemPrompt
+  );
+}
+
+// Step 3: 분석 결과 저장
+visionAnalyses.push(`## 페이지 ${pageNum}\n\n${primaryAnalysis}`);
+```
+
+**특징:**
+- PDF 페이지별 Vision 분석
+- Claude: PDF → PNG 변환 후 분석 (PyMuPDF Layer 사용)
+- Nova/Mistral: PDF 직접 분석
+- 최대 5개 이미지 처리
+- Fallback 메커니즘 (변환 실패 시 Nova Lite 사용)
+
+</details>
+
+### 2. Pillar별 분석 에이전트
+
+**파일**: `backend/src/services/AgentOrchestrationService.ts`
+
+6개 Pillar를 병렬로 분석하는 AI 에이전트입니다.
+
+<details>
+<summary><b>핵심 코드 보기</b></summary>
+
+```typescript
+async reviewPillar(
+  pillar: string,
+  document: Document,
+  documentContent: string,
+  images: Array<{buffer: Buffer, name: string, type: string}>,
+  systemPrompt: string,
+  governancePolicies: string[],
+  additionalInstructions?: string
+): Promise<PillarResult> {
+  
+  console.log(`[${pillar}] Starting review...`);
+
+  // 1. 프롬프트 구성 (System Prompt + 문서 내용 + 추가 지시사항)
+  const fullPrompt = this.constructPrompt(
+    systemPrompt,
+    document,
+    documentContent,
+    additionalInstructions
+  );
+
+  // 2. Vision 모델 또는 텍스트 모델 선택
+  let response: string;
+  if (images.length > 0) {
+    console.log(`[${pillar}] Using vision model with ${images.length} images`);
+    response = await this.invokeBedrockVisionModel(fullPrompt, images.slice(0, 5));
+  } else {
+    console.log(`[${pillar}] Using text model`);
+    response = await this.invokeBedrockModel(fullPrompt);
+  }
+
+  // 3. 거버넌스 정책 검증 (선택사항)
+  let governanceViolations: PolicyViolation[] = [];
+  if (governancePolicies.length > 0) {
+    governanceViolations = await this.qBusinessService.queryGovernancePolicies(
+      governancePolicies,
+      documentContent
+    );
+  }
+
+  // 4. AI 응답 파싱
+  const { findings, recommendations } = this.parseBedrockResponse(response);
+
+  return {
+    pillarName: pillar,
+    status: 'Completed',
+    findings,
+    recommendations,
+    governanceViolations,
+    duration: Date.now() - startTime
+  };
+}
+```
+
+**특징:**
+- 6개 Pillar 병렬 실행 (Promise.all)
+- Pillar별 전문 System Prompt 사용
+- Vision 이미지 선택적 포함 (환경 변수로 제어)
+- 거버넌스 정책 자동 검증
+- 실행 시간 측정
+
+**병렬 실행 코드:**
+```typescript
+const pillarPromises = selectedPillars.map(pillar =>
+  this.reviewPillar(pillar, document, documentContent, images, ...)
+);
+const pillarResults = await Promise.all(pillarPromises);
+```
+
+</details>
+
+### 3. QuickSuite Chat Embedding
+
+**파일**: `frontend/src/components/ChatWidget.tsx`
+
+QuickSight Chat Agent를 React 컴포넌트에 임베딩합니다.
+
+<details>
+<summary><b>핵심 코드 보기</b></summary>
+
+```typescript
+// 1. Backend에서 Embed URL 및 Agent ID 가져오기
+const loadEmbedUrl = async () => {
+  const apiBaseUrl = import.meta.env.VITE_API_URL;
+  const token = localStorage.getItem('authToken');
+  
+  const response = await fetch(`${apiBaseUrl}/quicksight/embed-url`, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  });
+  
+  const data = await response.json();
+  const { embedUrl, agentId } = data;
+  
+  // Embed using SDK
+  await embedQuickChat(embedUrl, agentId);
+};
+
+// 2. QuickSight Embedding SDK로 Chat 임베딩
+const embedQuickChat = async (url: string, agentId: string) => {
+  // Agent ID 검증
+  if (!agentId) {
+    setError('QuickSuite Agent가 설정되지 않았습니다.');
+    return;
+  }
+  
+  // Embedding Context 생성
+  const embeddingContext = await createEmbeddingContext();
+
+  // Frame 옵션 설정
+  const frameOptions = {
+    url,
+    container: containerRef.current,
+    height: '100%',
+    width: '100%',
+    onChange: (changeEvent: any) => {
+      console.log('QuickChat frame event:', changeEvent.eventName);
+    },
+  };
+
+  // Content 옵션 설정
+  const contentOptions = {
+    locale: 'ko-KR',
+    agentOptions: {
+      fixedAgentId: agentId,  // Backend에서 받은 Agent ID
+    },
+    onMessage: async (messageEvent: any) => {
+      if (messageEvent.eventName === 'ERROR_OCCURRED') {
+        setError('채팅 로드 중 오류가 발생했습니다');
+      }
+    },
+  };
+
+  // QuickChat 임베딩 실행
+  await embeddingContext.embedQuickChat(frameOptions, contentOptions);
+  console.log('QuickChat embedded successfully');
+};
+```
+
+**Backend (Embed URL 생성):**
+```typescript
+// backend/src/services/QuickSightService.ts
+async generateChatEmbedUrl(userId: string, email: string): Promise<{
+  embedUrl: string;
+  agentId: string;
+}> {
+  const command = new GenerateEmbedUrlForRegisteredUserCommand({
+    AwsAccountId: this.accountId,
+    UserArn: `arn:aws:quicksight:${region}:${accountId}:user/${namespace}/${userName}`,
+    ExperienceConfiguration: {
+      QuickChat: {
+        InitialAgentId: this.agentId,  // Lambda 환경 변수에서 로드
+      },
+    },
+    SessionLifetimeInMinutes: 600,
+    AllowedDomains: ['http://localhost:3000'],
+  });
+
+  const response = await this.client.send(command);
+  
+  return {
+    embedUrl: response.EmbedUrl,
+    agentId: this.agentId,
+  };
+}
+```
+
+**특징:**
+- Amazon QuickSight Embedding SDK 사용
+- Backend에서 Embed URL 동적 생성 (보안)
+- 한국어 로케일 지원
+- 리사이즈 가능한 패널 (300px ~ 800px)
+- 에러 처리 및 로딩 상태 관리
+
+</details>
+
 ---
 
 ## 배포 가이드
