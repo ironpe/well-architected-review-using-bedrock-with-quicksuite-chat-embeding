@@ -444,6 +444,8 @@ const pillarResults = await Promise.all(pillarPromises);
 
 QuickSight Chat Agent를 React 컴포넌트에 임베딩합니다.
 
+> 💡 프론트엔드를 로컬 개벌서버가 아닌 AWS 환경으로 배포할 때는 Backend의 generateChatEmbedUrl에서 AllowedDomains: ['http://localhost:3000'] 부분을 실제 도메인으로 수정해야 합니다.
+
 <details>
 <summary><b>핵심 코드 보기</b></summary>
 
