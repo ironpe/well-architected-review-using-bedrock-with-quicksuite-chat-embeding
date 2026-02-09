@@ -667,6 +667,32 @@ export class MinimalArchitectureReviewStack extends cdk.Stack {
       authorizationType: apigateway.AuthorizationType.COGNITO,
     });
 
+    // Review Model endpoint
+    const reviewModel = agents.addResource('review-model', {
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: ['GET', 'PUT', 'OPTIONS'],
+        allowHeaders: [
+          'Content-Type',
+          'Authorization',
+          'X-Amz-Date',
+          'X-Api-Key',
+          'X-Amz-Security-Token',
+        ],
+        allowCredentials: true,
+      },
+    });
+    
+    reviewModel.addMethod('GET', new apigateway.LambdaIntegration(pillarConfigFn), {
+      authorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+    
+    reviewModel.addMethod('PUT', new apigateway.LambdaIntegration(pillarConfigFn), {
+      authorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
     // Reviews endpoint
     const reviews = api.root.addResource('reviews', {
       defaultCorsPreflightOptions: {
@@ -832,6 +858,26 @@ export class MinimalArchitectureReviewStack extends cdk.Stack {
     });
     
     policyById.addMethod('DELETE', new apigateway.LambdaIntegration(governancePolicyFn), {
+      authorizer,
+      authorizationType: apigateway.AuthorizationType.COGNITO,
+    });
+
+    // PATCH /governance/policies/{policyId}/toggle
+    const policyToggle = policyById.addResource('toggle', {
+      defaultCorsPreflightOptions: {
+        allowOrigins: apigateway.Cors.ALL_ORIGINS,
+        allowMethods: ['PATCH', 'OPTIONS'],
+        allowHeaders: [
+          'Content-Type',
+          'Authorization',
+          'X-Amz-Date',
+          'X-Api-Key',
+          'X-Amz-Security-Token',
+        ],
+        allowCredentials: true,
+      },
+    });
+    policyToggle.addMethod('PATCH', new apigateway.LambdaIntegration(governancePolicyFn), {
       authorizer,
       authorizationType: apigateway.AuthorizationType.COGNITO,
     });

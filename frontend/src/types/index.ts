@@ -21,6 +21,36 @@ export type PillarStatus = 'Pending' | 'In Progress' | 'Completed' | 'Failed';
 export type PolicySeverity = 'High' | 'Medium' | 'Low';
 
 // ========================================
+// Cost Tracking Types
+// ========================================
+
+export interface CostItem {
+  service: string;
+  operation: string;
+  modelId?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  imageCount?: number;
+  requestCount?: number;
+  dataTransferKB?: number;
+  cost: number;
+  timestamp: string;
+}
+
+export interface CostBreakdown {
+  items: CostItem[];
+  totalCost: number;
+  currency: string;
+  breakdown: {
+    bedrock: number;
+    s3: number;
+    dynamodb: number;
+    lambda: number;
+    other: number;
+  };
+}
+
+// ========================================
 // Domain Models
 // ========================================
 
@@ -122,7 +152,41 @@ export interface ReviewReport {
   pillarResults: Record<string, PillarResult>;
   overallSummary: string;        // Architecture analysis (for architecture tab)
   executiveSummary?: string;     // Executive summary (for summary tab)
+  costBreakdown?: CostBreakdown; // Cost breakdown (for cost tab)
+  governanceAnalysis?: GovernanceAnalysisResult; // Governance compliance (for governance tab)
   generatedAt: string;
+}
+
+// ========================================
+// Governance Compliance Analysis Types
+// ========================================
+
+export interface GovernanceComplianceResult {
+  policyId: string;
+  policyTitle: string;
+  status: 'Compliant' | 'Non-Compliant' | 'Partially Compliant' | 'Not Applicable';
+  findings: string;
+  violations: GovernanceViolationDetail[];
+  recommendations: string[];
+}
+
+export interface GovernanceViolationDetail {
+  rule: string;
+  description: string;
+  severity: PolicySeverity;
+  recommendation: string;
+}
+
+export interface GovernanceAnalysisResult {
+  analyzedAt: string;
+  totalPolicies: number;
+  compliantCount: number;
+  nonCompliantCount: number;
+  partiallyCompliantCount: number;
+  notApplicableCount: number;
+  policyResults: GovernanceComplianceResult[];
+  overallStatus: 'Compliant' | 'Non-Compliant' | 'Partially Compliant';
+  summary: string;
 }
 
 export interface PromptVersion {
@@ -199,6 +263,7 @@ export interface ExecuteReviewRequest {
   pillarSelection: PillarName[];
   governancePolicies: string[];
   instructions: Record<string, string>;
+  language?: 'ko' | 'en';
 }
 
 export interface ExecuteReviewResponse {

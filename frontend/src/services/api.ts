@@ -234,6 +234,10 @@ class ApiClient {
     await this.client.delete(`/governance/policies/${policyId}`);
   }
 
+  async toggleGovernancePolicyActive(policyId: string, isActive: boolean): Promise<void> {
+    await this.client.patch(`/governance/policies/${policyId}/toggle`, { isActive });
+  }
+
   // Review Requests
   async deleteReviewRequest(reviewRequestId: string): Promise<void> {
     await this.client.delete(`/review-requests/${reviewRequestId}`);
@@ -243,6 +247,16 @@ class ApiClient {
   async getDocumentPreviewUrl(documentId: string): Promise<string> {
     const response = await this.client.get(`/documents/${documentId}/preview`);
     return response.data.previewUrl;
+  }
+
+  // Pillar Review Model Configuration
+  async getPillarReviewModelConfig(): Promise<{ modelId: string }> {
+    const response = await this.client.get('/agents/review-model');
+    return response.data;
+  }
+
+  async updatePillarReviewModelConfig(modelId: string): Promise<void> {
+    await this.client.put('/agents/review-model', { modelId });
   }
 }
 

@@ -17,6 +17,7 @@ import { useNavigate } from 'react-router-dom';
 import { DocumentFormat } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export function UploadPage() {
   const [file, setFile] = useState<File | null>(null);
@@ -32,18 +33,23 @@ export function UploadPage() {
   const [isDragOver, setIsDragOver] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, language } = useLanguage();
 
   const validateAndSetFile = (selectedFile: File) => {
     // PPT 파일 거부
     if (selectedFile.name.match(/\.(ppt|pptx)$/i)) {
-      setError('PPT 파일은 지원하지 않습니다. PDF 또는 이미지 파일(PNG, JPG)로 변환하여 업로드해주세요.');
+      setError(language === 'ko' 
+        ? 'PPT 파일은 지원하지 않습니다. PDF 또는 이미지 파일(PNG, JPG)로 변환하여 업로드해주세요.'
+        : 'PPT files are not supported. Please convert to PDF or image files (PNG, JPG) and upload.');
       setFile(null);
       return false;
     }
     
     // 허용된 파일 형식 확인
     if (!selectedFile.name.match(/\.(pdf|png|jpg|jpeg)$/i)) {
-      setError('지원하지 않는 파일 형식입니다. PDF 또는 이미지 파일(PNG, JPG)만 업로드 가능합니다.');
+      setError(language === 'ko'
+        ? '지원하지 않는 파일 형식입니다. PDF 또는 이미지 파일(PNG, JPG)만 업로드 가능합니다.'
+        : 'Unsupported file format. Only PDF or image files (PNG, JPG) can be uploaded.');
       setFile(null);
       return false;
     }
@@ -102,7 +108,7 @@ export function UploadPage() {
     setSuccess(false);
 
     if (!file) {
-      setError('파일을 선택해주세요');
+      setError(language === 'ko' ? '파일을 선택해주세요' : 'Please select a file');
       return;
     }
 
@@ -111,7 +117,7 @@ export function UploadPage() {
 
     try {
       // Step 1: Get presigned URL
-      setUploadStep('업로드 준비 중...');
+      setUploadStep(language === 'ko' ? '업로드 준비 중...' : 'Preparing upload...');
       setUploadProgress(5);
 
       const uploadResult = await api.uploadDocument(
@@ -125,15 +131,15 @@ export function UploadPage() {
         (progress) => {
           // Real-time progress from S3 upload
           setUploadProgress(5 + (progress * 0.9)); // 5% ~ 95%
-          setUploadStep(`파일 업로드 중... ${progress}%`);
+          setUploadStep(language === 'ko' ? `파일 업로드 중... ${progress}%` : `Uploading file... ${progress}%`);
         }
       );
 
       setUploadProgress(100);
-      setUploadStep('업로드 완료');
+      setUploadStep(language === 'ko' ? '업로드 완료' : 'Upload complete');
 
       // Step 2: Create review request
-      setUploadStep('검토 요청 생성 중...');
+      setUploadStep(language === 'ko' ? '검토 요청 생성 중...' : 'Creating review request...');
       await api.createReviewRequest({
         documentId: uploadResult.documentId,
         title,
@@ -156,11 +162,13 @@ export function UploadPage() {
       }, 2000);
     } catch (err: any) {
       console.error('Upload error:', err);
-      const errorMsg = err.response?.data?.error || err.message || '업로드에 실패했습니다';
+      const errorMsg = err.response?.data?.error || err.message || (language === 'ko' ? '업로드에 실패했습니다' : 'Upload failed');
       
       // 413 에러 특별 처리
       if (err.response?.status === 413) {
-        setError('파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.');
+        setError(language === 'ko' 
+          ? '파일 크기가 너무 큽니다. 최대 100MB까지 업로드 가능합니다.'
+          : 'File size is too large. Maximum upload size is 100MB.');
       } else {
         setError(errorMsg);
       }
@@ -174,13 +182,13 @@ export function UploadPage() {
   return (
     <Box>
       <Typography variant="h4" gutterBottom fontWeight={700} sx={{ mb: 3 }}>
-        아키텍처 문서 업로드
+        {t('upload.title')}
       </Typography>
 
       <Paper sx={{ p: 3, mt: 2 }}>
         {success && (
           <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSuccess(false)}>
-            문서가 성공적으로 업로드되었습니다. 검토자에게 알림이 발송되었습니다.
+            {t('upload.successMessage')}
           </Alert>
         )}
 
@@ -218,19 +226,19 @@ export function UploadPage() {
             />
             <UploadIcon sx={{ fontSize: 48, color: 'text.secondary', mb: 1 }} />
             <Typography variant="body1">
-              {file ? file.name : '파일을 선택하거나 드래그하세요'}
+              {file ? file.name : t('upload.fileSelect')}
             </Typography>
             <Typography variant="caption" color="text.secondary">
-              지원 형식: PDF, PNG, JPG (최대 100MB)
+              {t('upload.supportedFormatsExt')}
             </Typography>
             <Typography variant="caption" color="error" sx={{ display: 'block', mt: 1 }}>
-              ⚠️ PPT 파일은 지원하지 않습니다. PDF로 변환하여 업로드해주세요.
+              {t('upload.pptWarning')}
             </Typography>
           </Box>
 
           <TextField
             fullWidth
-            label="문서 제목"
+            label={t('upload.documentTitle')}
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             required
@@ -239,7 +247,7 @@ export function UploadPage() {
 
           <TextField
             fullWidth
-            label="문서 설명"
+            label={t('upload.documentDescription')}
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             required
@@ -249,25 +257,25 @@ export function UploadPage() {
           />
 
           <FormControl fullWidth sx={{ mb: 2 }}>
-            <InputLabel>문서 형식</InputLabel>
+            <InputLabel>{t('upload.documentFormat')}</InputLabel>
             <Select
               value={format}
-              label="문서 형식"
+              label={t('upload.documentFormat')}
               onChange={(e) => setFormat(e.target.value as DocumentFormat)}
             >
               <MenuItem value="pdf">PDF</MenuItem>
-              <MenuItem value="png">이미지 (PNG/JPG)</MenuItem>
+              <MenuItem value="png">{t('upload.imageFormat')}</MenuItem>
             </Select>
           </FormControl>
 
           <TextField
             fullWidth
-            label="검토자 이메일"
+            label={t('upload.reviewerEmail')}
             type="email"
             value={reviewerEmail}
             onChange={(e) => setReviewerEmail(e.target.value)}
             required
-            helperText="검토를 요청할 CCoE 팀원의 이메일 주소"
+            helperText={t('upload.reviewerEmailHelper')}
             sx={{ mb: 3 }}
           />
 
@@ -287,7 +295,7 @@ export function UploadPage() {
             size="large"
             disabled={uploading || !file}
           >
-            {uploading ? '업로드 중...' : '검토 요청하기'}
+            {uploading ? t('upload.uploading') : t('upload.requestReview')}
           </Button>
         </Box>
       </Paper>

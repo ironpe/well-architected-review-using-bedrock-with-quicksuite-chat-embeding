@@ -19,6 +19,7 @@ import {
 } from '@mui/material';
 import { PillarName, PillarConfig } from '../types';
 import { api } from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const PILLARS: PillarName[] = [
   'Operational Excellence',
@@ -29,7 +30,7 @@ const PILLARS: PillarName[] = [
   'Sustainability',
 ];
 
-const PILLAR_LABELS: Record<PillarName, string> = {
+const PILLAR_LABELS_KO: Record<PillarName, string> = {
   'Operational Excellence': '운영 우수성',
   'Security': '보안',
   'Reliability': '안정성',
@@ -38,8 +39,17 @@ const PILLAR_LABELS: Record<PillarName, string> = {
   'Sustainability': '지속 가능성',
 };
 
+const PILLAR_LABELS_EN: Record<PillarName, string> = {
+  'Operational Excellence': 'Operational Excellence',
+  'Security': 'Security',
+  'Reliability': 'Reliability',
+  'Performance Efficiency': 'Performance Efficiency',
+  'Cost Optimization': 'Cost Optimization',
+  'Sustainability': 'Sustainability',
+};
+
 // Vision 모델 옵션
-const VISION_MODELS = [
+const VISION_MODELS_KO = [
   {
     id: 'us.amazon.nova-lite-v1:0',
     name: 'Amazon Nova Lite v1',
@@ -66,7 +76,7 @@ const VISION_MODELS = [
     description: '균형잡힌 성능, 빠른 분석 (💰💰 중간)',
   },
   {
-    id: 'us.anthropic.claude-sonnet-4-5-20250514-v1:0',
+    id: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
     name: 'Claude Sonnet 4.5',
     description: '최신 Sonnet, 향상된 추론 (💰💰 중간)',
   },
@@ -74,6 +84,111 @@ const VISION_MODELS = [
     id: 'us.anthropic.claude-opus-4-5-20251101-v1:0',
     name: 'Claude Opus 4.5',
     description: '최고 성능, 복잡한 추론 (💰💰💰 비쌈)',
+  },
+  {
+    id: 'qwen.qwen3-vl-235b-a22b',
+    name: 'Qwen3 VL 235B A22B',
+    description: '최신 Qwen3 비전 모델, 대규모 파라미터 (💰💰 중간)',
+  },
+];
+
+const VISION_MODELS_EN = [
+  {
+    id: 'us.amazon.nova-lite-v1:0',
+    name: 'Amazon Nova Lite v1',
+    description: 'Fast processing, basic document analysis (💰 Low cost)',
+  },
+  {
+    id: 'us.amazon.nova-2-lite-v1:0',
+    name: 'Amazon Nova 2 Lite v1',
+    description: 'Latest Nova 2nd gen, improved performance (💰 Low cost)',
+  },
+  {
+    id: 'us.amazon.nova-pro-v1:0',
+    name: 'Amazon Nova Pro v1',
+    description: 'Enhanced accuracy, complex document analysis (💰💰 Medium)',
+  },
+  {
+    id: 'us.mistral.pixtral-large-2502-v1:0',
+    name: 'Mistral Pixtral Large',
+    description: 'Large context, detailed analysis (💰💰 Medium)',
+  },
+  {
+    id: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+    name: 'Claude Sonnet 3.5 v2',
+    description: 'Balanced performance, fast analysis (💰💰 Medium)',
+  },
+  {
+    id: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+    name: 'Claude Sonnet 4.5',
+    description: 'Latest Sonnet, enhanced reasoning (💰💰 Medium)',
+  },
+  {
+    id: 'us.anthropic.claude-opus-4-5-20251101-v1:0',
+    name: 'Claude Opus 4.5',
+    description: 'Best performance, complex reasoning (💰💰💰 High cost)',
+  },
+  {
+    id: 'qwen.qwen3-vl-235b-a22b',
+    name: 'Qwen3 VL 235B A22B',
+    description: 'Latest Qwen3 vision model, large parameters (💰💰 Medium)',
+  },
+];
+
+// Pillar 검토 모델 옵션 (Converse API 지원 - Claude + Nova)
+const REVIEW_MODELS_KO = [
+  {
+    id: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+    name: 'Claude Sonnet 3.5 v2',
+    description: '균형잡힌 성능, 빠른 분석 (💰💰 중간) - 기본값',
+  },
+  {
+    id: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+    name: 'Claude Sonnet 4.5',
+    description: '최신 Sonnet, 향상된 추론 (💰💰 중간)',
+  },
+  {
+    id: 'us.anthropic.claude-opus-4-5-20251101-v1:0',
+    name: 'Claude Opus 4.5',
+    description: '최고 성능, 복잡한 추론 (💰💰💰 비쌈)',
+  },
+  {
+    id: 'us.amazon.nova-lite-v1:0',
+    name: 'Amazon Nova Lite v1',
+    description: '빠른 처리, 기본 분석 (💰 저렴)',
+  },
+  {
+    id: 'us.amazon.nova-pro-v1:0',
+    name: 'Amazon Nova Pro v1',
+    description: '향상된 정확도, 복잡한 분석 (💰💰 중간)',
+  },
+];
+
+const REVIEW_MODELS_EN = [
+  {
+    id: 'us.anthropic.claude-3-5-sonnet-20241022-v2:0',
+    name: 'Claude Sonnet 3.5 v2',
+    description: 'Balanced performance, fast analysis (💰💰 Medium) - Default',
+  },
+  {
+    id: 'us.anthropic.claude-sonnet-4-5-20250929-v1:0',
+    name: 'Claude Sonnet 4.5',
+    description: 'Latest Sonnet, enhanced reasoning (💰💰 Medium)',
+  },
+  {
+    id: 'us.anthropic.claude-opus-4-5-20251101-v1:0',
+    name: 'Claude Opus 4.5',
+    description: 'Best performance, complex reasoning (💰💰💰 High cost)',
+  },
+  {
+    id: 'us.amazon.nova-lite-v1:0',
+    name: 'Amazon Nova Lite v1',
+    description: 'Fast processing, basic analysis (💰 Low cost)',
+  },
+  {
+    id: 'us.amazon.nova-pro-v1:0',
+    name: 'Amazon Nova Pro v1',
+    description: 'Enhanced accuracy, complex analysis (💰💰 Medium)',
   },
 ];
 
@@ -412,14 +527,21 @@ export function AgentConfigPage() {
   const [novaVisionMaxTokens, setNovaVisionMaxTokens] = useState(8192);
   const [novaVisionTemperature, setNovaVisionTemperature] = useState(0.3);
   const [novaVisionPrompt, setNovaVisionPrompt] = useState(DEFAULT_NOVA_VISION_PROMPT);
+  const [reviewModelId, setReviewModelId] = useState('us.anthropic.claude-3-5-sonnet-20241022-v2:0');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
   const [error, setError] = useState('');
+  const { language } = useLanguage();
+
+  const PILLAR_LABELS = language === 'ko' ? PILLAR_LABELS_KO : PILLAR_LABELS_EN;
+  const VISION_MODELS = language === 'ko' ? VISION_MODELS_KO : VISION_MODELS_EN;
+  const REVIEW_MODELS = language === 'ko' ? REVIEW_MODELS_KO : REVIEW_MODELS_EN;
 
   useEffect(() => {
     loadConfigs();
     loadNovaVisionPrompt();
+    loadReviewModelConfig();
   }, []);
 
   const loadNovaVisionPrompt = async () => {
@@ -441,6 +563,33 @@ export function AgentConfigPage() {
       setNovaVisionMaxTokens(8192);
       setNovaVisionTemperature(0.3);
       setNovaVisionPrompt(DEFAULT_NOVA_VISION_PROMPT);
+    }
+  };
+
+  const loadReviewModelConfig = async () => {
+    try {
+      const config = await api.getPillarReviewModelConfig();
+      console.log('Loaded Review Model config:', config);
+      setReviewModelId(config.modelId);
+    } catch (error: any) {
+      console.error('Failed to load Review Model config:', error.response?.status, error.response?.data, error.message);
+      setReviewModelId('us.anthropic.claude-3-5-sonnet-20241022-v2:0');
+    }
+  };
+
+  const saveReviewModelConfig = async () => {
+    try {
+      setSaving(true);
+      console.log('Saving Review Model config:', { modelId: reviewModelId });
+      await api.updatePillarReviewModelConfig(reviewModelId);
+      setSaved(true);
+      setTimeout(() => setSaved(false), 3000);
+    } catch (err: any) {
+      console.error('Save Review Model error:', err.response?.status, err.response?.data, err.message);
+      const status = err.response?.status ? ` (${err.response.status})` : '';
+      setError(err.response?.data?.error || `${err.message}${status}` || (language === 'ko' ? 'Pillar 검토 모델 저장에 실패했습니다' : 'Failed to save pillar review model'));
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -498,8 +647,8 @@ export function AgentConfigPage() {
     }
   };
 
-  const currentPillar = PILLARS[selectedTab - 1]; // -1 because first tab is Nova Vision
-  const currentConfig = selectedTab > 0 ? configs[currentPillar] : null;
+  const currentPillar = PILLARS[selectedTab - 2]; // -2 because first tab is Vision, second is Review Model
+  const currentConfig = selectedTab > 1 ? configs[currentPillar] : null;
 
   const handleSave = async () => {
     if (!currentConfig) return;
@@ -513,7 +662,7 @@ export function AgentConfigPage() {
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
     } catch (err: any) {
-      setError(err.response?.data?.error || '저장에 실패했습니다');
+      setError(err.response?.data?.error || (language === 'ko' ? '저장에 실패했습니다' : 'Failed to save'));
     } finally {
       setSaving(false);
     }
@@ -550,7 +699,7 @@ export function AgentConfigPage() {
   return (
     <Box>
       <Typography variant="h4" gutterBottom fontWeight={700} sx={{ mb: 3 }}>
-        아키텍처 리뷰 에이전트 설정
+        {language === 'ko' ? '아키텍처 리뷰 에이전트 설정' : 'Architecture Review Agent Configuration'}
       </Typography>
 
       {error && (
@@ -566,7 +715,8 @@ export function AgentConfigPage() {
           variant="fullWidth"
           scrollButtons={false}
         >
-          <Tab label="아키텍처 분석" />
+          <Tab label={language === 'ko' ? '아키텍처 분석' : 'Architecture Analysis'} />
+          <Tab label={language === 'ko' ? 'Pillar 검토 모델' : 'Pillar Review Model'} />
           {PILLARS.map((pillar) => (
             <Tab key={pillar} label={PILLAR_LABELS[pillar]} />
           ))}
@@ -578,28 +728,29 @@ export function AgentConfigPage() {
         <Paper sx={{ p: 3 }}>
           {saved && (
             <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSaved(false)}>
-              아키텍처 분석 설정이 저장되었습니다.
+              {language === 'ko' ? '아키텍처 분석 설정이 저장되었습니다.' : 'Architecture analysis settings saved.'}
             </Alert>
           )}
 
           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
             <Typography variant="h6">
-              아키텍처 분석 설정
+              {language === 'ko' ? '아키텍처 분석 설정' : 'Architecture Analysis Settings'}
             </Typography>
           </Box>
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3, textAlign: 'left' }}>
-            아키텍처 다이어그램을 분석하는 Vision 모델과 프롬프트를 설정하세요.
-            이 설정은 "아키텍처 분석" 탭에 표시되는 내용을 생성합니다.
+            {language === 'ko' 
+              ? '아키텍처 다이어그램을 분석하는 Vision 모델과 프롬프트를 설정하세요. 이 설정은 "아키텍처 분석" 탭에 표시되는 내용을 생성합니다.'
+              : 'Configure the Vision model and prompt for analyzing architecture diagrams. These settings generate the content displayed in the "Architecture Analysis" tab.'}
           </Typography>
 
           {/* 모델 선택 */}
           <FormControl fullWidth sx={{ mb: 3 }}>
-            <InputLabel>Vision 모델</InputLabel>
+            <InputLabel>{language === 'ko' ? 'Vision 모델' : 'Vision Model'}</InputLabel>
             <Select
               value={novaVisionModelId || 'us.amazon.nova-lite-v1:0'}
               onChange={(e) => setNovaVisionModelId(e.target.value)}
-              label="Vision 모델"
+              label={language === 'ko' ? 'Vision 모델' : 'Vision Model'}
             >
               {VISION_MODELS.map((model) => (
                 <MenuItem key={model.id} value={model.id}>
@@ -627,7 +778,7 @@ export function AgentConfigPage() {
                 value={novaVisionMaxTokens ?? 8192}
                 onChange={(e) => setNovaVisionMaxTokens(Number(e.target.value))}
                 inputProps={{ min: 1024, max: 16384, step: 1024 }}
-                helperText="1024 - 16384 범위"
+                helperText={language === 'ko' ? '1024 - 16384 범위' : 'Range: 1024 - 16384'}
               />
             </Box>
 
@@ -653,14 +804,14 @@ export function AgentConfigPage() {
                 sx={{ mt: 1 }}
               />
               <Typography variant="caption" color="text.secondary">
-                낮을수록 일관성 있고 결정적, 높을수록 창의적
+                {language === 'ko' ? '낮을수록 일관성 있고 결정적, 높을수록 창의적' : 'Lower = more consistent, Higher = more creative'}
               </Typography>
             </Box>
           </Box>
 
           {/* 프롬프트 */}
           <Typography variant="body2" gutterBottom fontWeight={600}>
-            분석 프롬프트
+            {language === 'ko' ? '분석 프롬프트' : 'Analysis Prompt'}
           </Typography>
           <TextField
             fullWidth
@@ -680,7 +831,7 @@ export function AgentConfigPage() {
               onClick={saveNovaVisionPrompt}
               disabled={saving}
             >
-              {saving ? '저장 중...' : '저장'}
+              {saving ? (language === 'ko' ? '저장 중...' : 'Saving...') : (language === 'ko' ? '저장' : 'Save')}
             </Button>
             <Button
               variant="outlined"
@@ -691,24 +842,92 @@ export function AgentConfigPage() {
                 setNovaVisionPrompt(DEFAULT_NOVA_VISION_PROMPT);
               }}
             >
-              기본값으로 초기화
+              {language === 'ko' ? '기본값으로 초기화' : 'Reset to Default'}
             </Button>
           </Box>
 
           <Alert severity="info" sx={{ mt: 2 }}>
             <Typography variant="body2">
-              <strong>참고:</strong> 설정 변경 사항은 다음 검토부터 적용됩니다.
+              <strong>{language === 'ko' ? '참고:' : 'Note:'}</strong> {language === 'ko' ? '설정 변경 사항은 다음 검토부터 적용됩니다.' : 'Changes will be applied from the next review.'}
+            </Typography>
+          </Alert>
+        </Paper>
+      )}
+
+      {/* Pillar 검토 모델 탭 */}
+      {selectedTab === 1 && (
+        <Paper sx={{ p: 3 }}>
+          {saved && (
+            <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSaved(false)}>
+              {language === 'ko' ? 'Pillar 검토 모델 설정이 저장되었습니다.' : 'Pillar review model settings saved.'}
+            </Alert>
+          )}
+
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+            <Typography variant="h6">
+              {language === 'ko' ? 'Pillar 검토 모델 설정' : 'Pillar Review Model Settings'}
+            </Typography>
+          </Box>
+
+          <Typography variant="body2" color="text.secondary" sx={{ mb: 3, textAlign: 'left' }}>
+            {language === 'ko'
+              ? '6개 Well-Architected Pillar 검토와 Executive Summary 생성에 사용되는 AI 모델을 설정합니다. 이 모델은 아키텍처 다이어그램 분석(Vision 모델)과는 별도로 동작합니다.'
+              : 'Configure the AI model used for the 6 Well-Architected Pillar reviews and Executive Summary generation. This model operates separately from the architecture diagram analysis (Vision model).'}
+          </Typography>
+
+          <FormControl fullWidth sx={{ mb: 3 }}>
+            <InputLabel>{language === 'ko' ? 'Pillar 검토 모델' : 'Pillar Review Model'}</InputLabel>
+            <Select
+              value={reviewModelId}
+              onChange={(e) => setReviewModelId(e.target.value)}
+              label={language === 'ko' ? 'Pillar 검토 모델' : 'Pillar Review Model'}
+            >
+              {REVIEW_MODELS.map((model) => (
+                <MenuItem key={model.id} value={model.id}>
+                  <Box>
+                    <Typography variant="body1">{model.name}</Typography>
+                    <Typography variant="caption" color="text.secondary">
+                      {model.description}
+                    </Typography>
+                  </Box>
+                </MenuItem>
+              ))}
+            </Select>
+          </FormControl>
+
+          <Box sx={{ display: 'flex', gap: 2 }}>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={saveReviewModelConfig}
+              disabled={saving}
+            >
+              {saving ? (language === 'ko' ? '저장 중...' : 'Saving...') : (language === 'ko' ? '저장' : 'Save')}
+            </Button>
+            <Button
+              variant="outlined"
+              onClick={() => setReviewModelId('us.anthropic.claude-3-5-sonnet-20241022-v2:0')}
+            >
+              {language === 'ko' ? '기본값으로 초기화' : 'Reset to Default'}
+            </Button>
+          </Box>
+
+          <Alert severity="info" sx={{ mt: 2 }}>
+            <Typography variant="body2">
+              <strong>{language === 'ko' ? '참고:' : 'Note:'}</strong> {language === 'ko'
+                ? '이 모델은 6개 Pillar 검토(운영 우수성, 보안, 안정성, 성능 효율성, 비용 최적화, 지속 가능성)와 Executive Summary 생성에 사용됩니다. 아키텍처 다이어그램 분석에는 "아키텍처 분석" 탭에서 설정한 Vision 모델이 사용됩니다.'
+                : 'This model is used for the 6 Pillar reviews (Operational Excellence, Security, Reliability, Performance Efficiency, Cost Optimization, Sustainability) and Executive Summary generation. The Vision model configured in the "Architecture Analysis" tab is used for architecture diagram analysis.'}
             </Typography>
           </Alert>
         </Paper>
       )}
 
       {/* Pillar 탭들 */}
-      {selectedTab > 0 && currentConfig && (
+      {selectedTab > 1 && currentConfig && (
         <Paper sx={{ p: 3 }}>
           {saved && (
             <Alert severity="success" sx={{ mb: 2 }} onClose={() => setSaved(false)}>
-              {currentPillar} 프롬프트가 저장되었습니다.
+              {language === 'ko' ? `${PILLAR_LABELS[currentPillar]} 프롬프트가 저장되었습니다.` : `${currentPillar} prompt saved.`}
             </Alert>
           )}
 
@@ -724,12 +943,14 @@ export function AgentConfigPage() {
                   color="success"
                 />
               }
-              label={currentConfig.enabled ? '활성' : '비활성'}
+              label={currentConfig.enabled ? (language === 'ko' ? '활성' : 'Enabled') : (language === 'ko' ? '비활성' : 'Disabled')}
             />
           </Box>
 
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2, textAlign: 'left' }}>
-            이 원칙을 검토하는 AI 에이전트가 사용할 시스템 프롬프트를 설정하세요.
+            {language === 'ko' 
+              ? '이 원칙을 검토하는 AI 에이전트가 사용할 시스템 프롬프트를 설정하세요.'
+              : 'Configure the system prompt for the AI agent reviewing this pillar.'}
           </Typography>
 
           <TextField
@@ -749,14 +970,15 @@ export function AgentConfigPage() {
               onClick={handleSave}
               disabled={saving}
             >
-              {saving ? '저장 중...' : '저장'}
+              {saving ? (language === 'ko' ? '저장 중...' : 'Saving...') : (language === 'ko' ? '저장' : 'Save')}
             </Button>
           </Box>
 
           <Alert severity="info" sx={{ mt: 2 }}>
             <Typography variant="body2">
-              <strong>참고:</strong> 프롬프트 변경 사항은 다음 검토부터 적용됩니다. 
-              이전 버전은 히스토리에서 확인할 수 있습니다.
+              <strong>{language === 'ko' ? '참고:' : 'Note:'}</strong> {language === 'ko' 
+                ? '프롬프트 변경 사항은 다음 검토부터 적용됩니다. 이전 버전은 히스토리에서 확인할 수 있습니다.'
+                : 'Prompt changes will be applied from the next review. Previous versions can be found in the history.'}
             </Typography>
           </Alert>
         </Paper>

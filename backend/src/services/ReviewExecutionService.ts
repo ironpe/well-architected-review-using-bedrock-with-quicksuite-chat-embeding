@@ -10,6 +10,7 @@ import { environment } from '../config/environment.js';
 import { AgentOrchestrationService } from './AgentOrchestrationService.js';
 import { DocumentService } from './DocumentService.js';
 import { PillarConfigurationService } from './PillarConfigurationService.js';
+import { GovernancePolicyService } from './GovernancePolicyService.js';
 import {
   ReviewExecution,
   ReviewExecutionRecord,
@@ -18,6 +19,8 @@ import {
   PillarConfig,
   ExecutionStatus,
   NotFoundError,
+  CostBreakdown,
+  GovernanceAnalysisResult,
 } from '../types/index.js';
 import { reviewExecutionRecordToDomain } from '../utils/type-converters.js';
 import { validateRequiredString, validatePillarNames } from '../utils/validators.js';
@@ -28,6 +31,7 @@ export class ReviewExecutionService {
   private agentOrchestration: AgentOrchestrationService;
   private documentService: DocumentService;
   private pillarConfigService: PillarConfigurationService;
+  private governancePolicyService: GovernancePolicyService;
 
   constructor() {
     const ddbClient = new DynamoDBClient({ region: environment.aws.region });
@@ -36,6 +40,7 @@ export class ReviewExecutionService {
     this.agentOrchestration = new AgentOrchestrationService();
     this.documentService = new DocumentService();
     this.pillarConfigService = new PillarConfigurationService();
+    this.governancePolicyService = new GovernancePolicyService();
   }
 
   /**
@@ -49,6 +54,7 @@ export class ReviewExecutionService {
     governancePolicyIds: string[];
     architecturePages?: number[];
     instructions: Record<string, string>;
+    language?: 'ko' | 'en';
   }): Promise<string> {
     validateRequiredString(params.reviewRequestId, 'reviewRequestId');
     validateRequiredString(params.documentId, 'documentId');
@@ -69,6 +75,7 @@ export class ReviewExecutionService {
       selectedPillars: params.selectedPillars,
       governancePolicyIds: params.governancePolicyIds,
       architecturePages: params.architecturePages,
+      language: params.language || 'ko',
       startedAt: timestamp,
     };
 
@@ -102,6 +109,7 @@ export class ReviewExecutionService {
     governancePolicyIds: string[];
     architecturePages?: number[];
     instructions: Record<string, string>;
+    language?: 'ko' | 'en';
   }): Promise<void> {
     try {
       console.log(`Starting review execution: ${params.executionId}`);
@@ -141,17 +149,60 @@ export class ReviewExecutionService {
 
       // Execute all pillars
       console.log('Executing all pillars...');
-      const { pillarResults, visionSummary, executiveSummary } = await this.agentOrchestration.executeAllPillars(
+      const { pillarResults, visionSummary, executiveSummary, costBreakdown, documentContent } = await this.agentOrchestration.executeAllPillars(
         document,
         pillarConfigs,
         params.governancePolicyIds,
-        params.architecturePages
+        params.architecturePages,
+        params.language || 'ko'
       );
 
       console.log(`Completed ${Object.keys(pillarResults).length} pillar reviews`);
+      console.log(`Total cost: $${costBreakdown.totalCost.toFixed(6)}`);
 
-      // Update execution with results, vision summary, and executive summary
-      await this.updateExecutionResults(params.executionId, pillarResults, 'Completed', visionSummary, executiveSummary);
+      // Run governance compliance analysis for user-selected policies
+      let governanceAnalysis: GovernanceAnalysisResult | undefined;
+      try {
+        const selectedPolicyIds = params.governancePolicyIds || [];
+        if (selectedPolicyIds.length > 0) {
+          console.log(`Running governance compliance analysis for ${selectedPolicyIds.length} selected policies...`);
+          
+          const docContent = documentContent || `Title: ${document.title}\nDescription: ${document.description}`;
+          
+          const policyBuffers = await Promise.all(
+            selectedPolicyIds.map(async (policyId) => {
+              try {
+                const { buffer, policy } = await this.governancePolicyService.getPolicyBuffer(policyId);
+                return { policy, buffer };
+              } catch (err) {
+                console.warn(`Failed to load policy ${policyId}:`, err);
+                return null;
+              }
+            })
+          );
+
+          const validPolicies = policyBuffers.filter((p): p is { policy: any; buffer: Buffer } => p !== null);
+          
+          if (validPolicies.length > 0) {
+            governanceAnalysis = await this.agentOrchestration.analyzeGovernanceCompliance(
+              docContent,
+              validPolicies,
+              params.language || 'ko'
+            );
+            console.log(`Governance analysis completed: ${governanceAnalysis.overallStatus}`);
+          }
+        } else {
+          console.log('No governance policies selected, skipping compliance analysis');
+        }
+      } catch (error) {
+        console.warn('Governance compliance analysis failed:', error);
+      }
+
+      // Re-fetch cost breakdown to include governance analysis costs
+      const finalCostBreakdown = this.agentOrchestration.getCostBreakdown() || costBreakdown;
+
+      // Update execution with results, vision summary, executive summary, cost, and governance
+      await this.updateExecutionResults(params.executionId, pillarResults, 'Completed', visionSummary, executiveSummary, finalCostBreakdown, governanceAnalysis);
       
       // Update ReviewRequest status to "Review Completed"
       try {
@@ -181,6 +232,7 @@ export class ReviewExecutionService {
     governancePolicyIds: string[];
     architecturePages?: number[];
     instructions: Record<string, string>;
+    language?: 'ko' | 'en';
   }): Promise<string> {
     validateRequiredString(params.reviewRequestId, 'reviewRequestId');
     validateRequiredString(params.documentId, 'documentId');
@@ -201,6 +253,7 @@ export class ReviewExecutionService {
       selectedPillars: params.selectedPillars,
       governancePolicyIds: params.governancePolicyIds,
       architecturePages: params.architecturePages,
+      language: params.language || 'ko',
       startedAt: timestamp,
     };
 
@@ -245,6 +298,7 @@ export class ReviewExecutionService {
       governancePolicyIds: string[];
       architecturePages?: number[];
       instructions: Record<string, string>;
+      language?: 'ko' | 'en';
     }
   ): Promise<void> {
     try {
@@ -285,17 +339,57 @@ export class ReviewExecutionService {
 
       // Execute all pillars
       console.log('Executing all pillars...');
-      const { pillarResults, visionSummary, executiveSummary } = await this.agentOrchestration.executeAllPillars(
+      const { pillarResults, visionSummary, executiveSummary, costBreakdown, documentContent } = await this.agentOrchestration.executeAllPillars(
         document,
         pillarConfigs,
         params.governancePolicyIds,
-        params.architecturePages
+        params.architecturePages,
+        params.language || 'ko'
       );
 
       console.log(`Completed ${Object.keys(pillarResults).length} pillar reviews`);
 
-      // Update execution with results, vision summary, and executive summary
-      await this.updateExecutionResults(executionId, pillarResults, 'Completed', visionSummary, executiveSummary);
+      // Run governance compliance analysis for user-selected policies
+      let governanceAnalysis: GovernanceAnalysisResult | undefined;
+      try {
+        const selectedPolicyIds = params.governancePolicyIds || [];
+        if (selectedPolicyIds.length > 0) {
+          console.log(`[Async] Running governance compliance analysis for ${selectedPolicyIds.length} selected policies...`);
+          
+          const docContent = documentContent || `Title: ${document.title}\nDescription: ${document.description}`;
+          
+          const policyBuffers = await Promise.all(
+            selectedPolicyIds.map(async (policyId) => {
+              try {
+                const { buffer, policy } = await this.governancePolicyService.getPolicyBuffer(policyId);
+                return { policy, buffer };
+              } catch (err) {
+                console.warn(`Failed to load policy ${policyId}:`, err);
+                return null;
+              }
+            })
+          );
+
+          const validPolicies = policyBuffers.filter((p): p is { policy: any; buffer: Buffer } => p !== null);
+          
+          if (validPolicies.length > 0) {
+            governanceAnalysis = await this.agentOrchestration.analyzeGovernanceCompliance(
+              docContent,
+              validPolicies,
+              params.language || 'ko'
+            );
+            console.log(`[Async] Governance analysis completed: ${governanceAnalysis.overallStatus}`);
+          }
+        }
+      } catch (error) {
+        console.warn('[Async] Governance compliance analysis failed:', error);
+      }
+
+      // Re-fetch cost breakdown to include governance analysis costs
+      const finalCostBreakdown = this.agentOrchestration.getCostBreakdown() || costBreakdown;
+
+      // Update execution with results, vision summary, executive summary, cost, and governance
+      await this.updateExecutionResults(executionId, pillarResults, 'Completed', visionSummary, executiveSummary, finalCostBreakdown, governanceAnalysis);
       
       // Update ReviewRequest status to "Review Completed"
       try {
@@ -404,7 +498,9 @@ export class ReviewExecutionService {
     pillarResults: Record<string, PillarResult>,
     status: ExecutionStatus,
     visionSummary?: string,
-    executiveSummary?: string
+    executiveSummary?: string,
+    costBreakdown?: CostBreakdown,
+    governanceAnalysis?: GovernanceAnalysisResult
   ): Promise<void> {
     const timestamp = new Date().toISOString();
 
@@ -429,6 +525,16 @@ export class ReviewExecutionService {
     if (executiveSummary) {
       updateParts.push('executiveSummary = :executiveSummary');
       expressionValues[':executiveSummary'] = executiveSummary;
+    }
+
+    if (costBreakdown) {
+      updateParts.push('costBreakdown = :costBreakdown');
+      expressionValues[':costBreakdown'] = this.removeUndefinedValues(costBreakdown);
+    }
+
+    if (governanceAnalysis) {
+      updateParts.push('governanceAnalysis = :governanceAnalysis');
+      expressionValues[':governanceAnalysis'] = this.removeUndefinedValues(governanceAnalysis);
     }
 
     await this.dynamoClient.send(

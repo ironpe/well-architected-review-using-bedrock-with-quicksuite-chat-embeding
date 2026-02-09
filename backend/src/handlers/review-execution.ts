@@ -90,6 +90,7 @@ export async function executeReviewHandler(
       governancePolicyIds: request.governancePolicies,
       architecturePages: request.architecturePages,
       instructions: request.instructions,
+      language: request.language || 'ko',
     });
 
     console.log('Review execution created:', executionId);
@@ -106,6 +107,7 @@ export async function executeReviewHandler(
         governancePolicyIds: request.governancePolicies,
         architecturePages: request.architecturePages,
         instructions: request.instructions,
+        language: request.language || 'ko',
       };
 
       await lambdaClient.send(new InvokeCommand({
@@ -212,8 +214,10 @@ export async function getReviewResultsHandler(
       documentId: execution.documentId,
       versionNumber: execution.versionNumber,
       pillarResults: execution.pillarResults || {},
-      overallSummary: execution.visionSummary || generateOverallSummary(execution.pillarResults || {}),
+      overallSummary: execution.visionSummary || generateOverallSummary(execution.pillarResults || {}, execution.language),
       executiveSummary: execution.executiveSummary || '', // Executive summary for summary tab
+      costBreakdown: execution.costBreakdown || null, // Cost breakdown for cost tab
+      governanceAnalysis: execution.governanceAnalysis || null, // Governance compliance analysis
       generatedAt: execution.completedAt || new Date().toISOString(),
     };
 
@@ -226,7 +230,8 @@ export async function getReviewResultsHandler(
 /**
  * Generate overall summary from pillar results
  */
-function generateOverallSummary(pillarResults: Record<string, PillarResult>): string {
+function generateOverallSummary(pillarResults: Record<string, PillarResult>, language?: string): string {
+  const lang = language || 'ko';
   const completedPillars = Object.values(pillarResults).filter(
     r => r.status === 'Completed'
   );
@@ -234,29 +239,7 @@ function generateOverallSummary(pillarResults: Record<string, PillarResult>): st
     r => r.status === 'Failed'
   );
 
-  let summary = `## 아키텍처 검토 종합 요약\n\n`;
-
-  // 검토 완료 상태
-  summary += `### 검토 현황\n`;
-  summary += `- 완료된 원칙: ${completedPillars.length}개\n`;
-  if (failedPillars.length > 0) {
-    summary += `- 실패한 원칙: ${failedPillars.length}개\n`;
-  }
-  summary += `\n`;
-
-  // 전체 권장사항 수
-  const totalRecommendations = completedPillars.reduce(
-    (sum, r) => sum + (r.recommendations?.length || 0),
-    0
-  );
-  summary += `### 권장사항 통계\n`;
-  summary += `- 총 권장사항: ${totalRecommendations}개\n`;
-  summary += `\n`;
-
-  // 원칙별 요약
-  summary += `### 원칙별 주요 발견사항\n\n`;
-  
-  const pillarNames: Record<string, string> = {
+  const pillarNamesKo: Record<string, string> = {
     'Operational Excellence': '운영 우수성',
     'Security': '보안',
     'Reliability': '안정성',
@@ -265,39 +248,84 @@ function generateOverallSummary(pillarResults: Record<string, PillarResult>): st
     'Sustainability': '지속 가능성',
   };
 
+  if (lang === 'en') {
+    let summary = `## Architecture Review Summary\n\n`;
+    summary += `### Review Status\n`;
+    summary += `- Completed pillars: ${completedPillars.length}\n`;
+    if (failedPillars.length > 0) {
+      summary += `- Failed pillars: ${failedPillars.length}\n`;
+    }
+    summary += `\n`;
+
+    const totalRecommendations = completedPillars.reduce(
+      (sum, r) => sum + (r.recommendations?.length || 0), 0
+    );
+    summary += `### Recommendation Statistics\n`;
+    summary += `- Total recommendations: ${totalRecommendations}\n\n`;
+
+    summary += `### Key Findings by Pillar\n\n`;
+    completedPillars.forEach(pillar => {
+      summary += `**${pillar.pillarName}**\n`;
+      const findings = pillar.findings || '';
+      const lines = findings.split('\n').filter(l => l.trim().length > 20);
+      const firstPoint = lines.slice(0, 2).join(' ').substring(0, 200);
+      if (firstPoint) summary += `${firstPoint}...\n`;
+      summary += `Recommendations: ${pillar.recommendations?.length || 0}\n\n`;
+    });
+
+    const totalViolations = completedPillars.reduce(
+      (sum, r) => sum + (r.governanceViolations?.length || 0), 0
+    );
+    if (totalViolations > 0) {
+      summary += `### Governance Policy\n`;
+      summary += `- Violations found: ${totalViolations}\n\n`;
+    }
+
+    summary += `### Next Steps\n`;
+    summary += `1. Review detailed results for each pillar\n`;
+    summary += `2. Prioritize and apply high-priority recommendations\n`;
+    summary += `3. Request a re-review after architecture modifications if needed\n`;
+    return summary;
+  }
+
+  // Korean (default)
+  let summary = `## 아키텍처 검토 종합 요약\n\n`;
+  summary += `### 검토 현황\n`;
+  summary += `- 완료된 원칙: ${completedPillars.length}개\n`;
+  if (failedPillars.length > 0) {
+    summary += `- 실패한 원칙: ${failedPillars.length}개\n`;
+  }
+  summary += `\n`;
+
+  const totalRecommendations = completedPillars.reduce(
+    (sum, r) => sum + (r.recommendations?.length || 0), 0
+  );
+  summary += `### 권장사항 통계\n`;
+  summary += `- 총 권장사항: ${totalRecommendations}개\n\n`;
+
+  summary += `### 원칙별 주요 발견사항\n\n`;
   completedPillars.forEach(pillar => {
-    const koreanName = pillarNames[pillar.pillarName] || pillar.pillarName;
+    const koreanName = pillarNamesKo[pillar.pillarName] || pillar.pillarName;
     summary += `**${koreanName}**\n`;
-    
-    // Extract first key point from findings
     const findings = pillar.findings || '';
     const lines = findings.split('\n').filter(l => l.trim().length > 20);
     const firstPoint = lines.slice(0, 2).join(' ').substring(0, 200);
-    
-    if (firstPoint) {
-      summary += `${firstPoint}...\n`;
-    }
-    
+    if (firstPoint) summary += `${firstPoint}...\n`;
     summary += `권장사항: ${pillar.recommendations?.length || 0}개\n\n`;
   });
 
-  // 거버넌스 위반 요약
   const totalViolations = completedPillars.reduce(
-    (sum, r) => sum + (r.governanceViolations?.length || 0),
-    0
+    (sum, r) => sum + (r.governanceViolations?.length || 0), 0
   );
-  
   if (totalViolations > 0) {
     summary += `### 거버넌스 정책\n`;
-    summary += `- 발견된 위반사항: ${totalViolations}개\n`;
-    summary += `\n`;
+    summary += `- 발견된 위반사항: ${totalViolations}개\n\n`;
   }
 
   summary += `### 다음 단계\n`;
   summary += `1. 각 원칙별 상세 검토 결과를 확인하세요\n`;
   summary += `2. 우선순위가 높은 권장사항부터 적용을 검토하세요\n`;
   summary += `3. 필요시 아키텍처 수정 후 재검토를 요청하세요\n`;
-
   return summary;
 }
 
@@ -339,7 +367,7 @@ export async function downloadReportHandler(
       documentId: execution.documentId,
       versionNumber: execution.versionNumber,
       pillarResults: execution.pillarResults || {},
-      overallSummary: execution.visionSummary || generateOverallSummary(execution.pillarResults || {}),
+      overallSummary: execution.visionSummary || generateOverallSummary(execution.pillarResults || {}, execution.language),
       executiveSummary: execution.executiveSummary || '',
       generatedAt: execution.completedAt || new Date().toISOString(),
     };

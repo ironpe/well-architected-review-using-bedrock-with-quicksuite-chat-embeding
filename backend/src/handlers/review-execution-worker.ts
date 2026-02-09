@@ -17,11 +17,13 @@ interface WorkerPayload {
   governancePolicyIds: string[];
   architecturePages?: number[];
   instructions: Record<string, string>;
+  language?: 'ko' | 'en';
 }
 
 export async function handler(event: WorkerPayload): Promise<void> {
   console.log('Review Execution Worker started:', event.executionId);
   console.log('Selected Pillars:', event.selectedPillars);
+  console.log('Language:', event.language || 'ko');
 
   try {
     // Execute the review
@@ -34,6 +36,7 @@ export async function handler(event: WorkerPayload): Promise<void> {
       governancePolicyIds: event.governancePolicyIds,
       architecturePages: event.architecturePages,
       instructions: event.instructions,
+      language: event.language || 'ko',
     });
 
     console.log('Review execution completed:', event.executionId);

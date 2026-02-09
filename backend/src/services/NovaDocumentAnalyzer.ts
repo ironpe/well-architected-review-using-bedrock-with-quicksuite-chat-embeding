@@ -4,6 +4,7 @@
  */
 
 import { BedrockRuntimeClient, InvokeModelCommand } from '@aws-sdk/client-bedrock-runtime';
+import { CostTracker } from '../utils/cost-tracker.js';
 
 export interface NovaPageAnalysis {
   pageNumber: number;
@@ -14,6 +15,7 @@ export interface NovaPageAnalysis {
 
 export class NovaDocumentAnalyzer {
   private bedrockClient: BedrockRuntimeClient;
+  public costTracker: CostTracker | null = null;
 
   constructor() {
     this.bedrockClient = new BedrockRuntimeClient({ 
@@ -125,6 +127,19 @@ CONFIDENCE: [0-100]
         if (textContent) {
           let responseText = textContent.text;
           console.log('Nova response (first 1000 chars):', responseText.substring(0, 1000));
+          
+          // Track cost
+          if (this.costTracker) {
+            const usage = responseBody.usage;
+            const inputTokens = usage?.inputTokens || usage?.input_tokens || 0;
+            const outputTokens = usage?.outputTokens || usage?.output_tokens || 0;
+            this.costTracker.trackBedrockInvocation({
+              modelId: 'us.amazon.nova-lite-v1:0',
+              inputTokens: inputTokens || Math.ceil(JSON.stringify(payload).length / 4),
+              outputTokens: outputTokens || Math.ceil(responseText.length / 4),
+              operation: 'Nova Lite - PDF Page Scan',
+            });
+          }
           
           // Parse simple text format instead of JSON
           const result = this.parseNovaTextResponse(responseText);
@@ -271,45 +286,60 @@ CONFIDENCE: [0-100]
   }
 
   /**
-   * Analyze specific PDF page with Nova Vision
+   * Analyze specific PDF page with Qwen models
    */
-  async analyzePageWithNova(
+  private async analyzePageWithQwen(
     pdfBuffer: Buffer,
     pageNumber: number,
-    modelId: string = 'us.amazon.nova-lite-v1:0',
+    modelId: string,
     maxTokens: number = 8192,
     temperature: number = 0.3,
     customPrompt?: string
   ): Promise<string> {
     try {
-      console.log(`Analyzing page ${pageNumber} with Amazon Nova Lite Vision...`);
+      console.log(`Analyzing page ${pageNumber} with Qwen model ${modelId}...`);
       
       // Use custom prompt if provided, otherwise use default
       const analysisPrompt = customPrompt || this.getDefaultVisionPrompt();
       
+      console.log('Using Qwen-specific API format (OpenAI compatible with image_url)...');
+      const { PdfToImageService } = await import('./PdfToImageService');
+      const pdfToImageService = new PdfToImageService();
+      
+      // Convert PDF page to image
+      // Note: pdfBuffer is already a single-page PDF extracted from the original,
+      // so we always use page 1 for conversion
+      const imageBuffer = await pdfToImageService.convertPdfPageToImage(pdfBuffer, 1);
+      const base64Image = imageBuffer.toString('base64');
+      
+      console.log(`Image converted, base64 length: ${base64Image.length}`);
+      
+      // Qwen VL models use OpenAI-compatible format with image_url
+      // Tested and confirmed working format:
+      // { type: 'image_url', image_url: { url: 'data:image/png;base64,...' } }
       const payload = {
         messages: [{
           role: 'user',
           content: [
             {
-              document: {
-                format: 'pdf',
-                name: `page-${pageNumber}.pdf`,
-                source: {
-                  bytes: pdfBuffer.toString('base64'),
-                },
-              },
+              type: 'image_url',
+              image_url: {
+                url: `data:image/png;base64,${base64Image}`
+              }
             },
             {
-              text: analysisPrompt,
-            },
-          ],
+              type: 'text',
+              text: analysisPrompt
+            }
+          ]
         }],
-        inferenceConfig: {
-          maxTokens,
-          temperature,
-        },
+        max_tokens: maxTokens,
+        temperature: temperature
       };
+      
+      console.log(`Sending request with Qwen payload (OpenAI image_url format)`);
+      console.log(`Payload structure: messages[0].content has ${payload.messages[0].content.length} items`);
+      console.log(`First content item type: ${payload.messages[0].content[0].type}`);
 
       const command = new InvokeModelCommand({
         modelId,
@@ -321,16 +351,193 @@ CONFIDENCE: [0-100]
       const response = await this.bedrockClient.send(command);
       const responseBody = JSON.parse(new TextDecoder().decode(response.body));
       
+      console.log(`Qwen response:`, JSON.stringify(responseBody, null, 2).substring(0, 500));
+      
+      // OpenAI-compatible response format
+      if (responseBody.choices?.[0]?.message?.content) {
+        // Track cost for Qwen
+        if (this.costTracker) {
+          const usage = responseBody.usage;
+          const responseText = responseBody.choices[0].message.content;
+          this.costTracker.trackBedrockInvocation({
+            modelId,
+            inputTokens: usage?.prompt_tokens || usage?.inputTokens || Math.ceil(JSON.stringify(payload).length / 4),
+            outputTokens: usage?.completion_tokens || usage?.outputTokens || Math.ceil(responseText.length / 4),
+            operation: `Vision - Architecture Page ${pageNumber} (Qwen)`,
+            imageCount: 1,
+          });
+        }
+        return responseBody.choices[0].message.content;
+      }
+      
+      // Fallback for other response formats
       if (responseBody.output?.message?.content) {
         const textContent = responseBody.output.message.content.find((c: any) => c.text);
         if (textContent) {
+          // Track cost for fallback format
+          if (this.costTracker) {
+            const usage = responseBody.usage;
+            this.costTracker.trackBedrockInvocation({
+              modelId,
+              inputTokens: usage?.inputTokens || usage?.input_tokens || Math.ceil(JSON.stringify(payload).length / 4),
+              outputTokens: usage?.outputTokens || usage?.output_tokens || Math.ceil(textContent.text.length / 4),
+              operation: `Vision - Architecture Page ${pageNumber} (Qwen)`,
+              imageCount: 1,
+            });
+          }
           return textContent.text;
         }
       }
-
-      throw new Error('Invalid response from Nova');
+      
+      throw new Error('Invalid response from Qwen model');
     } catch (error) {
-      console.error('Nova page analysis failed:', error);
+      console.error('Qwen model analysis failed:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Analyze specific PDF page with Nova Vision
+   */
+  async analyzePageWithNova(
+    pdfBuffer: Buffer,
+    pageNumber: number,
+    modelId: string = 'us.amazon.nova-lite-v1:0',
+    maxTokens: number = 8192,
+    temperature: number = 0.3,
+    customPrompt?: string
+  ): Promise<string> {
+    try {
+      console.log(`Analyzing page ${pageNumber} with model ${modelId}...`);
+      
+      // Special handling for Qwen models
+      if (modelId.includes('qwen')) {
+        console.log(`Routing to Qwen-specific handler for model ${modelId}`);
+        return await this.analyzePageWithQwen(
+          pdfBuffer,
+          pageNumber,
+          modelId,
+          maxTokens,
+          temperature,
+          customPrompt
+        );
+      }
+      
+      // Use custom prompt if provided, otherwise use default
+      const analysisPrompt = customPrompt || this.getDefaultVisionPrompt();
+      
+      // For all other models, use Converse API
+      console.log(`Using Converse API format for model ${modelId}...`);
+      
+      // Check if model supports document format (Nova, Claude, Mistral Pixtral)
+      const supportsDocument = modelId.includes('nova') || 
+                              modelId.includes('claude') || 
+                              modelId.includes('pixtral');
+      console.log(`Model ${modelId} supports document format: ${supportsDocument}`);
+      
+      let payload: any;
+      
+      if (supportsDocument) {
+        // Use document format for models that support it
+        console.log(`Creating document payload for page ${pageNumber} (buffer size: ${pdfBuffer.length} bytes)`);
+        payload = {
+          messages: [{
+            role: 'user',
+            content: [
+              {
+                document: {
+                  format: 'pdf',
+                  name: `page-${pageNumber}.pdf`,
+                  source: {
+                    bytes: pdfBuffer.toString('base64'),
+                  },
+                },
+              },
+              {
+                text: analysisPrompt,
+              },
+            ],
+          }],
+          inferenceConfig: {
+            maxTokens,
+            temperature,
+          },
+        };
+      } else {
+        // Convert PDF page to image
+        console.log('Model does not support document format, converting PDF to image...');
+        const { PdfToImageService } = await import('./PdfToImageService');
+        const pdfToImageService = new PdfToImageService();
+        
+        const imageBuffer = await pdfToImageService.convertPdfPageToImage(pdfBuffer, pageNumber);
+        console.log(`Converted PDF page ${pageNumber} to image (size: ${imageBuffer.length} bytes)`);
+        
+        payload = {
+          messages: [{
+            role: 'user',
+            content: [
+              {
+                image: {
+                  format: 'png',
+                  source: {
+                    bytes: imageBuffer.toString('base64'),
+                  },
+                },
+              },
+              {
+                text: analysisPrompt,
+              },
+            ],
+          }],
+          inferenceConfig: {
+            maxTokens,
+            temperature,
+          },
+        };
+      }
+
+      // 디버깅을 위한 payload 로그 추가
+      console.log(`Converse API payload for page ${pageNumber} with model ${modelId}:`, JSON.stringify(payload, null, 2));
+
+      const command = new InvokeModelCommand({
+        modelId,
+        contentType: 'application/json',
+        accept: 'application/json',
+        body: JSON.stringify(payload),
+      });
+
+      console.log(`Sending request with Converse API payload`);
+
+      const response = await this.bedrockClient.send(command);
+      const responseBody = JSON.parse(new TextDecoder().decode(response.body));
+      
+      // 디버깅을 위한 응답 로그 추가
+      console.log(`Converse API response for page ${pageNumber} with model ${modelId}:`, JSON.stringify(responseBody, null, 2));
+      
+      // Converse API response format
+      if (responseBody.output?.message?.content) {
+        const textContent = responseBody.output.message.content.find((c: any) => c.text);
+        if (textContent) {
+          // Track cost (Nova/Converse API uses different usage field names)
+          if (this.costTracker) {
+            const usage = responseBody.usage;
+            const inputTokens = usage?.inputTokens || usage?.input_tokens || 0;
+            const outputTokens = usage?.outputTokens || usage?.output_tokens || 0;
+            this.costTracker.trackBedrockInvocation({
+              modelId,
+              inputTokens: inputTokens || Math.ceil(JSON.stringify(payload).length / 4),
+              outputTokens: outputTokens || Math.ceil(textContent.text.length / 4),
+              operation: `Vision - Architecture Page ${pageNumber} (${modelId.split(/[.:]/)[1] || modelId})`,
+              imageCount: 1,
+            });
+          }
+          return textContent.text;
+        }
+      }
+      
+      throw new Error('Invalid response from model');
+    } catch (error) {
+      console.error('Vision model analysis failed:', error);
       throw error;
     }
   }
@@ -357,11 +564,42 @@ CONFIDENCE: [0-100]
   /**
    * Extract single page from PDF
    */
-  async extractPdfPage(pdfBuffer: Buffer, _pageNumber: number): Promise<Buffer> {
-    // For Nova, we can pass the full PDF and specify page in prompt
-    // Or use pdf-lib to extract single page
-    // For now, return full PDF (Nova will handle it)
-    return pdfBuffer;
+  async extractPdfPage(pdfBuffer: Buffer, pageNumber: number): Promise<Buffer> {
+    try {
+      console.log(`Attempting to extract page ${pageNumber} from PDF buffer (size: ${pdfBuffer.length} bytes)`);
+      
+      // Use pdf-lib to extract single page
+      const { PDFDocument } = await import('pdf-lib');
+      
+      // Load the PDF
+      const pdfDoc = await PDFDocument.load(pdfBuffer);
+      
+      // Validate page number
+      const totalPages = pdfDoc.getPageCount();
+      console.log(`PDF loaded successfully. Total pages reported by pdf-lib: ${totalPages}`);
+      
+      if (pageNumber < 1 || pageNumber > totalPages) {
+        throw new Error(`Invalid page number ${pageNumber}. PDF has ${totalPages} pages.`);
+      }
+      
+      // Create a new PDF with only the selected page
+      const newPdfDoc = await PDFDocument.create();
+      const [copiedPage] = await newPdfDoc.copyPages(pdfDoc, [pageNumber - 1]); // 0-indexed
+      newPdfDoc.addPage(copiedPage);
+      
+      // Save as buffer
+      const pdfBytes = await newPdfDoc.save();
+      const extractedBuffer = Buffer.from(pdfBytes);
+      
+      console.log(`Extracted page ${pageNumber} from PDF (${(extractedBuffer.length / 1024).toFixed(1)}KB)`);
+      
+      return extractedBuffer;
+    } catch (error) {
+      console.error(`Failed to extract page ${pageNumber}:`, error);
+      // Fallback: return full PDF
+      console.warn('Falling back to full PDF');
+      return pdfBuffer;
+    }
   }
 
   /**

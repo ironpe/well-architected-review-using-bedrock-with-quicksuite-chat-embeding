@@ -14,6 +14,7 @@ import {
 } from '@mui/material';
 import { PillarName } from '../types';
 import { api } from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const PILLARS: PillarName[] = [
   'Operational Excellence',
@@ -24,7 +25,7 @@ const PILLARS: PillarName[] = [
   'Sustainability',
 ];
 
-const PILLAR_LABELS: Record<PillarName, string> = {
+const PILLAR_LABELS_KO: Record<PillarName, string> = {
   'Operational Excellence': '운영 우수성',
   'Security': '보안',
   'Reliability': '안정성',
@@ -33,10 +34,21 @@ const PILLAR_LABELS: Record<PillarName, string> = {
   'Sustainability': '지속 가능성',
 };
 
+const PILLAR_LABELS_EN: Record<PillarName, string> = {
+  'Operational Excellence': 'Operational Excellence',
+  'Security': 'Security',
+  'Reliability': 'Reliability',
+  'Performance Efficiency': 'Performance Efficiency',
+  'Cost Optimization': 'Cost Optimization',
+  'Sustainability': 'Sustainability',
+};
+
 export function ReviewExecutePage() {
   const { id: reviewRequestId } = useParams();
   const navigate = useNavigate();
   const location = useLocation();
+  const { t, language } = useLanguage();
+  const PILLAR_LABELS = language === 'ko' ? PILLAR_LABELS_KO : PILLAR_LABELS_EN;
   const [selectedPillars, setSelectedPillars] = useState<Set<PillarName>>(new Set(PILLARS));
   const [pillarConfigs, setPillarConfigs] = useState<Record<PillarName, { enabled: boolean }>>({} as any);
   const [instructions, setInstructions] = useState<Record<string, string>>({});
@@ -73,7 +85,9 @@ export function ReviewExecutePage() {
     try {
       setLoadingPolicies(true);
       const result = await api.getGovernancePolicies();
-      setGovernancePolicies(result.policies || []);
+      // Only show active policies on the execute page
+      const activePolicies = (result.policies || []).filter((p: any) => p.isActive);
+      setGovernancePolicies(activePolicies);
     } catch (err: any) {
       console.warn('Failed to load governance policies:', err);
       setGovernancePolicies([]);
@@ -180,6 +194,7 @@ export function ReviewExecutePage() {
         governancePolicies: Array.from(selectedPolicies),
         architecturePages: pageNumbers.length > 0 ? pageNumbers : undefined,
         instructions,
+        language: language as 'ko' | 'en',
       });
 
       console.log('Review execution started:', result.executionId);
@@ -250,7 +265,7 @@ export function ReviewExecutePage() {
   return (
     <Box>
       <Typography variant="h4" gutterBottom fontWeight={700} sx={{ mb: 3 }}>
-        아키텍처 검토 실행
+        {t('execute.pageTitle')}
       </Typography>
 
       {error && (
@@ -261,22 +276,22 @@ export function ReviewExecutePage() {
 
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" gutterBottom>
-          문서 정보
+          {t('execute.documentInfo')}
         </Typography>
         <Typography variant="body2" color="text.secondary" gutterBottom>
-          <strong>문서 제목:</strong> {documentTitle || '로딩 중...'}
+          <strong>{t('execute.documentTitle')}:</strong> {documentTitle || t('execute.loading')}
         </Typography>
         <Typography variant="body2" color="text.secondary">
-          <strong>검토 요청 ID:</strong> {reviewRequestId}
+          <strong>{t('execute.reviewRequestId')}:</strong> {reviewRequestId}
         </Typography>
       </Paper>
 
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
-          원칙 선택
+          {t('execute.pillarSelection')}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-          검토할 아키텍처 모범사례의 원칙을 선택하세요 (최소 1개)
+          {t('execute.pillarSelectionDesc')}
         </Typography>
 
         {loading ? (
@@ -315,20 +330,20 @@ export function ReviewExecutePage() {
                           {PILLAR_LABELS[pillar]}
                         </Typography>
                         {!isEnabled && (
-                          <Chip label="비활성" size="small" color="default" />
+                          <Chip label={t('execute.disabled')} size="small" color="default" />
                         )}
                       </Box>
 
                       {isSelected && (
                         <Box>
                           <Typography variant="body2" color="text.secondary" sx={{ mb: 1, textAlign: 'left' }}>
-                            추가 지시사항 (선택사항)
+                            {t('execute.additionalInstructions')}
                           </Typography>
                           <TextField
                             fullWidth
                             multiline
                             rows={3}
-                            placeholder={`${PILLAR_LABELS[pillar]}에 대한 추가 검토 지시사항을 입력하세요`}
+                            placeholder={`${PILLAR_LABELS[pillar]} ${t('execute.instructionPlaceholder')}`}
                             value={instructions[pillar] || ''}
                             onChange={(e) => handleInstructionChange(pillar, e.target.value)}
                             size="small"
@@ -348,30 +363,30 @@ export function ReviewExecutePage() {
 
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" gutterBottom>
-          📄 아키텍처 다이어그램 페이지 (선택사항)
+          {t('execute.architecturePages')}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          아키텍처 다이어그램이 있는 페이지 번호를 입력하세요
+          {t('execute.architecturePagesDesc')}
         </Typography>
         <TextField
           fullWidth
-          placeholder="예: 15, 18, 20"
+          placeholder={t('execute.architecturePagesPlaceholder')}
           value={architecturePages}
           onChange={(e) => setArchitecturePages(e.target.value)}
           disabled={executing}
-          helperText="여러 페이지는 쉼표로 구분. 비워두면 AI가 자동으로 찾습니다"
+          helperText={t('execute.architecturePagesHelper')}
         />
         <Alert severity="info" sx={{ mt: 2 }}>
-          💡 대시보드에서 문서 미리보기를 통해 페이지 번호를 확인할 수 있습니다
+          {t('execute.architecturePagesTip')}
         </Alert>
       </Paper>
 
       <Paper sx={{ p: 3, mb: 3 }}>
         <Typography variant="h6" gutterBottom>
-          거버넌스 정책 (선택사항)
+          {t('execute.governancePolicies')}
         </Typography>
         <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-          적용할 거버넌스 정책을 선택하세요
+          {t('execute.governancePoliciesDesc')}
         </Typography>
         
         {loadingPolicies ? (
@@ -380,7 +395,7 @@ export function ReviewExecutePage() {
           </Box>
         ) : governancePolicies.length === 0 ? (
           <Alert severity="info">
-            등록된 거버넌스 정책이 없습니다. 거버넌스 메뉴에서 정책을 등록하세요.
+            {t('execute.noPolicies')}
           </Alert>
         ) : (
           <Box>
@@ -419,7 +434,7 @@ export function ReviewExecutePage() {
                         variant="outlined"
                       />
                       <Chip 
-                        label={new Date(policy.uploadedAt).toLocaleDateString('ko-KR')} 
+                        label={new Date(policy.uploadedAt).toLocaleDateString(language === 'ko' ? 'ko-KR' : 'en-US')} 
                         size="small" 
                         variant="outlined"
                       />
@@ -431,7 +446,7 @@ export function ReviewExecutePage() {
             
             {selectedPolicies.size > 0 && (
               <Alert severity="success" sx={{ mt: 2 }}>
-                {selectedPolicies.size}개의 거버넌스 정책이 선택되었습니다.
+                {selectedPolicies.size}{t('execute.policiesSelected')}
               </Alert>
             )}
           </Box>
@@ -441,11 +456,11 @@ export function ReviewExecutePage() {
       {executing && (
         <Paper sx={{ p: 3, mb: 3 }}>
           <Typography variant="h6" gutterBottom>
-            검토 진행 중...
+            {t('execute.reviewInProgress')}
           </Typography>
           <LinearProgress sx={{ mb: 1 }} />
           <Typography variant="body2" color="text.secondary" align="center">
-            검토가 진행 중입니다. 완료되면 결과 페이지로 이동합니다.
+            {t('execute.reviewInProgressDesc')}
           </Typography>
         </Paper>
       )}
@@ -459,7 +474,7 @@ export function ReviewExecutePage() {
           disabled={selectedPillars.size === 0 || executing}
           fullWidth
         >
-          {executing ? '검토 실행 중...' : `검토 실행 (${selectedPillars.size}개 원칙)`}
+          {executing ? t('execute.executing') : `${t('execute.executeReview')} (${selectedPillars.size}${t('execute.pillarsCount')})`}
         </Button>
       </Box>
     </Box>

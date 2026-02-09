@@ -21,6 +21,36 @@ export type PillarStatus = 'Pending' | 'In Progress' | 'Completed' | 'Failed';
 export type PolicySeverity = 'High' | 'Medium' | 'Low';
 
 // ========================================
+// Cost Tracking Types
+// ========================================
+
+export interface CostItem {
+  service: string;
+  operation: string;
+  modelId?: string;
+  inputTokens?: number;
+  outputTokens?: number;
+  imageCount?: number;
+  requestCount?: number;
+  dataTransferKB?: number;
+  cost: number;
+  timestamp: string;
+}
+
+export interface CostBreakdown {
+  items: CostItem[];
+  totalCost: number;
+  currency: string;
+  breakdown: {
+    bedrock: number;
+    s3: number;
+    dynamodb: number;
+    lambda: number;
+    other: number;
+  };
+}
+
+// ========================================
 // DynamoDB Record Types
 // ========================================
 
@@ -74,12 +104,15 @@ export interface ReviewExecutionRecord {
   selectedPillars: PillarName[];
   governancePolicyIds: string[];
   architecturePages?: number[];  // User-specified architecture diagram pages
+  language?: 'ko' | 'en';       // User's selected language for AI responses
   startedAt: string;
   completedAt?: string;
   pillarResults?: Record<string, PillarResult>;
   reportS3Key?: string;
   visionSummary?: string;        // Vision analysis summary for architecture tab
   executiveSummary?: string;     // Executive summary for summary tab
+  costBreakdown?: CostBreakdown; // Cost tracking for this execution
+  governanceAnalysis?: GovernanceAnalysisResult; // Governance compliance analysis
 }
 
 export interface PillarConfigurationRecord {
@@ -185,6 +218,9 @@ export interface ReviewExecution {
   reportS3Key?: string;
   visionSummary?: string;        // Vision analysis summary (for architecture tab)
   executiveSummary?: string;     // Executive summary (for summary tab)
+  language?: 'ko' | 'en';       // User's selected language for AI responses
+  costBreakdown?: CostBreakdown; // Cost tracking for this execution
+  governanceAnalysis?: GovernanceAnalysisResult; // Governance compliance analysis
 }
 
 export interface PillarResult {
@@ -251,6 +287,7 @@ export interface ExecuteReviewRequest {
   governancePolicies: string[];
   instructions: Record<string, string>;
   architecturePages?: number[];  // User-specified architecture diagram pages
+  language?: 'ko' | 'en';       // User's selected language for AI responses
 }
 
 export interface ExecuteReviewResponse {
@@ -335,6 +372,7 @@ export interface ReviewReport {
   pillarResults: Record<string, PillarResult>;
   overallSummary: string;
   executiveSummary?: string;  // Executive Summary (종합 요약)
+  governanceAnalysis?: GovernanceAnalysisResult; // Governance compliance analysis
   generatedAt: string;
 }
 
@@ -358,6 +396,38 @@ export interface PaginationParams {
 export interface PaginatedResponse<T> {
   items: T[];
   nextToken?: string;
+}
+
+// ========================================
+// Governance Compliance Analysis Types
+// ========================================
+
+export interface GovernanceComplianceResult {
+  policyId: string;
+  policyTitle: string;
+  status: 'Compliant' | 'Non-Compliant' | 'Partially Compliant' | 'Not Applicable';
+  findings: string;
+  violations: GovernanceViolationDetail[];
+  recommendations: string[];
+}
+
+export interface GovernanceViolationDetail {
+  rule: string;
+  description: string;
+  severity: PolicySeverity;
+  recommendation: string;
+}
+
+export interface GovernanceAnalysisResult {
+  analyzedAt: string;
+  totalPolicies: number;
+  compliantCount: number;
+  nonCompliantCount: number;
+  partiallyCompliantCount: number;
+  notApplicableCount: number;
+  policyResults: GovernanceComplianceResult[];
+  overallStatus: 'Compliant' | 'Non-Compliant' | 'Partially Compliant';
+  summary: string;
 }
 
 // ========================================

@@ -13,6 +13,8 @@ import {
 } from '@mui/material';
 import { Visibility, VisibilityOff, Architecture as ArchIcon } from '@mui/icons-material';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
+import { LanguageToggle } from '../components/LanguageToggle';
 
 export function LoginPage() {
   const [email, setEmail] = useState('');
@@ -21,6 +23,7 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const { login } = useAuth();
   const navigate = useNavigate();
+  const { language } = useLanguage();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -30,7 +33,9 @@ export function LoginPage() {
       await login(email, password);
       navigate('/');
     } catch (err) {
-      setError('로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.');
+      setError(language === 'ko' 
+        ? '로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.'
+        : 'Login failed. Please check your email and password.');
     }
   };
 
@@ -44,14 +49,19 @@ export function LoginPage() {
       }}
     >
       <Container maxWidth="sm">
+        <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>
+          <LanguageToggle />
+        </Box>
         <Paper elevation={0} sx={{ p: 5, borderRadius: 2, border: '1px solid #e0e0e0' }}>
           <Box sx={{ textAlign: 'center', mb: 4 }}>
             <ArchIcon sx={{ fontSize: 56, color: '#00467F', mb: 2 }} />
             <Typography component="h1" variant="h4" fontWeight={700} gutterBottom color="#00467F">
-              Architecture Review System
+              {language === 'ko' ? 'AWS 아키텍처 리뷰' : 'AWS Architecture Review'}
             </Typography>
             <Typography variant="body1" color="text.secondary">
-              AWS Well-Architected Framework 기반 아키텍처 리뷰
+              {language === 'ko' 
+                ? 'AWS Well-Architected Framework 기반 아키텍처 리뷰'
+                : 'Architecture Review based on AWS Well-Architected Framework'}
             </Typography>
           </Box>
 
@@ -67,7 +77,7 @@ export function LoginPage() {
               required
               fullWidth
               id="email"
-              label="이메일"
+              label={language === 'ko' ? '이메일' : 'Email'}
               name="email"
               autoComplete="email"
               autoFocus
@@ -80,7 +90,7 @@ export function LoginPage() {
               required
               fullWidth
               name="password"
-              label="비밀번호"
+              label={language === 'ko' ? '비밀번호' : 'Password'}
               type={showPassword ? 'text' : 'password'}
               id="password"
               autoComplete="current-password"
@@ -115,33 +125,33 @@ export function LoginPage() {
                 }
               }}
             >
-              로그인
+              {language === 'ko' ? '로그인' : 'Login'}
             </Button>
 
             <Paper sx={{ mt: 3, p: 2.5, bgcolor: '#f8f9fa', border: '1px solid #e0e0e0' }} elevation={0}>
               <Typography variant="subtitle2" fontWeight={600} gutterBottom color="#00467F">
-                💡 테스트 계정
+                💡 {language === 'ko' ? '테스트 계정' : 'Test Accounts'}
               </Typography>
               <Box sx={{ mb: 2 }}>
                 <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
-                  제출자 (Requester_Group)
+                  {language === 'ko' ? '제출자 (Requester_Group)' : 'Requester (Requester_Group)'}
                 </Typography>
                 <Typography variant="body2" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
-                  이메일: requester@example.com
+                  {language === 'ko' ? '이메일' : 'Email'}: requester@example.com
                 </Typography>
                 <Typography variant="body2" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
-                  패스워드: Requester123!
+                  {language === 'ko' ? '패스워드' : 'Password'}: Requester123!
                 </Typography>
               </Box>
               <Box>
                 <Typography variant="body2" fontWeight={600} sx={{ mb: 0.5 }}>
-                  검토자 (Reviewer_Group)
+                  {language === 'ko' ? '검토자 (Reviewer_Group)' : 'Reviewer (Reviewer_Group)'}
                 </Typography>
                 <Typography variant="body2" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
-                  이메일: reviewer@example.com
+                  {language === 'ko' ? '이메일' : 'Email'}: reviewer@example.com
                 </Typography>
                 <Typography variant="body2" sx={{ fontFamily: 'monospace', color: 'text.secondary' }}>
-                  패스워드: Reviewer123!
+                  {language === 'ko' ? '패스워드' : 'Password'}: Reviewer123!
                 </Typography>
               </Box>
             </Paper>

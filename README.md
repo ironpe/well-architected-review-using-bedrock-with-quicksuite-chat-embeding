@@ -1,5 +1,7 @@
 # Architecture Review System
 
+🌐 [English](./README.en.md) | **한국어**
+
 AWS Well-Architected Framework 기반의 AI 아키텍처 리뷰 시스템
 
 ## 목차
@@ -32,7 +34,10 @@ AWS Well-Architected Framework 기반의 AI 아키텍처 리뷰 시스템
 | ⏱️ **시간 절약** | 수일 걸리던 아키텍처 검토를 수분 내로 단축 |
 | 🎯 **일관된 품질** | AWS Well-Architected Framework 기반의 표준화된 검토 기준 적용 |
 | 👁️ **시각적 분석** | Vision AI로 아키텍처 다이어그램 자동 인식 및 분석 |
+| 📄 **전체 문서 분석** | Nova Lite로 PDF 전체 텍스트를 추출하여 Pillar 검토에 활용 |
 | 🔄 **확장성** | 조직별 거버넌스 정책 및 커스텀 프롬프트 지원 |
+| 🌐 **다국어 지원** | 한국어/영어 UI 전환 및 AI 분석 결과 언어 선택 |
+| 💰 **비용 추적** | Bedrock, S3, DynamoDB, Lambda 사용 비용 실시간 추적 |
 | 🤝 **통합성** | QuickSuite Chat Agent 연동으로 대화형 인터페이스 제공 |
 
 ### 주요 사용 사례
@@ -81,8 +86,8 @@ flowchart TB
     end
 
     subgraph AI["🤖 Amazon Bedrock"]
-        Nova["Nova Lite/Pro<br/>(Vision)"]
-        Claude["Claude 3.5/4<br/>Sonnet/Opus"]
+        Nova["Nova Lite<br/>(PDF 스캔/텍스트 추출/<br/>Vision 분석)"]
+        Claude["Claude 3.5/4.5<br/>Sonnet/Opus<br/>(Pillar 검토/Vision)"]
         Other["기타 Vision<br/>모델 (선택)"]
     end
 
@@ -115,6 +120,8 @@ flowchart TB
 | **Web UI 경로** | React Frontend → Cognito 인증 → API Gateway → Lambda Functions |
 | **Chat Agent 경로** | QuickSuite Chat Agent → AgentCore Gateway → MCP Lambda (직접 호출) |
 | **AI 리뷰 처리** | Review Execution Handler → 프롬프트 구성 조회 → Amazon Bedrock 분석 |
+| **PDF 처리 파이프라인** | Nova Lite (페이지 스캔 → 다이어그램 식별) → Nova Lite (전체 텍스트 추출) → Vision 모델 (다이어그램 분석) → Pillar 검토 모델 (6개 Pillar 병렬 분석) |
+| **거버넌스 분석** | Nova Lite (정책 PDF 텍스트 추출) → Pillar 검토 모델 (정책 대비 준수 분석) |
 | **프롬프트 구성** | Pillar별 시스템 프롬프트 + 거버넌스 정책 + 아키텍처 분석 프롬프트 결합 |
 | **데이터 저장** | Lambda → S3 (문서/리포트/정책) + DynamoDB (메타데이터/설정) |
 
@@ -122,6 +129,10 @@ flowchart TB
 - 🤖 **AI 기반 검토**: Amazon Bedrock의 다양한 Vision 모델 지원
 - 🎯 **6개 Pillar 검토**: 운영 우수성, 보안, 안정성, 성능, 비용, 지속가능성
 - 📊 **Vision 분석**: PDF 다이어그램 자동 인식 및 분석
+- 📄 **전체 문서 분석**: Nova Lite가 PDF 전체 텍스트를 추출하여 Pillar 검토에 활용
+- 🏛️ **거버넌스 준수 분석**: 조직 정책 문서 대비 아키텍처 준수 여부 AI 분석
+- 🌐 **다국어 지원**: 한국어/영어 UI 전환 및 AI 분석 결과 언어 선택
+- 💰 **비용 추적**: 검토 실행별 AWS 서비스 사용 비용 실시간 추적
 - 📝 **자동 리포트**: PDF/Word 형식 리포트 생성
 - ⚡ **성능 최적화**: 수분 내 검토 완료
 - 💬 **Chat Agent**: QuickSuite를 통한 대화형 데이터 조회 (선택사항)
@@ -137,13 +148,26 @@ flowchart TB
 - **Mistral Pixtral Large**: 대용량 컨텍스트
 - **Claude Sonnet 3.5/4.5**: 균형잡힌 성능
 - **Claude Opus 4.5**: 최고 품질
+- **Qwen3 VL 235B**: 대규모 비전 모델
 
-### 2. 아키텍처 다이어그램 분석
-- PDF에서 아키텍처 다이어그램 자동 인식
+### 2. Nova Lite의 핵심 역할
+Nova Lite는 Vision 모델 선택지 외에도 시스템 전반에서 핵심적인 역할을 수행합니다:
+
+| 역할 | 설명 |
+|------|------|
+| **PDF 페이지 스캔** | PDF 전체 페이지를 분석하여 아키텍처 다이어그램 페이지를 자동 식별 (신뢰도 점수 기반) |
+| **전체 PDF 텍스트 추출** | 아키텍처 다이어그램 외 모든 페이지의 텍스트를 추출하여 Pillar 검토 모델에 전달 (설계 의도, 요구사항, 기술 스택 등) |
+| **거버넌스 정책 PDF 텍스트 추출** | PDF 형식의 거버넌스 정책 문서에서 텍스트를 추출하여 준수 분석에 활용 |
+
+이를 통해 Pillar 검토 모델은 다이어그램 분석 결과뿐 아니라 문서 전체 내용을 기반으로 종합적인 검토를 수행합니다.
+
+### 3. 아키텍처 다이어그램 분석
+- PDF에서 아키텍처 다이어그램 자동 인식 (Nova Lite 페이지 스캔)
+- 사용자 지정 페이지 또는 자동 선택
 - Vision AI로 다이어그램 상세 분석
 - AWS 서비스, 데이터 흐름, 보안 구성 파악
 
-### 3. 6개 Pillar 검토
+### 4. 6개 Pillar 검토
 각 Pillar별 전문 AI 에이전트가 병렬로 검토:
 - 운영 우수성 (Operational Excellence)
 - 보안 (Security)
@@ -152,18 +176,38 @@ flowchart TB
 - 비용 최적화 (Cost Optimization)
 - 지속 가능성 (Sustainability)
 
-### 4. Executive Summary
+Pillar 검토 모델은 Vision 모델과 별도로 설정 가능 (Claude, Nova 등 선택).
+
+### 5. 거버넌스 준수 분석
+- 거버넌스 정책 문서 업로드 및 활성화/비활성화 관리
+- 검토 실행 시 활성화된 정책 중 원하는 정책 선택
+- AI가 아키텍처 문서와 정책 문서를 대조하여 준수 여부 분석
+- 정책별 준수/미준수/부분 준수 상태, 위반 사항, 권장 조치 제공
+
+### 6. Executive Summary
 - 아키텍처 다이어그램 분석 요약
 - 영역별 주요 발견사항
 - 우선순위별 조치 사항
 - 기대 효과
 
-### 5. 리포트 생성
+### 7. 비용 추적
+- 검토 실행별 AWS 서비스 사용 비용 실시간 추적
+- Bedrock 모델별 토큰 기반 비용 계산 (입력/출력 토큰)
+- S3, DynamoDB, Lambda 비용 포함
+- 서비스별 비용 분류 (Bedrock, S3, DynamoDB, Lambda)
+- 검토 결과 페이지의 "비용 분석" 탭에서 상세 내역 확인
+
+### 8. 다국어 지원 (i18n)
+- 한국어/영어 UI 전환 (전체 페이지 번역)
+- AI 분석 결과 언어 선택 (검토 실행 시 ko/en 선택)
+- 선택한 언어로 Pillar 검토, Executive Summary, 거버넌스 분석 결과 생성
+
+### 9. 리포트 생성
 - PDF/Word 형식 다운로드
 - 마크다운 렌더링
 - 버전 관리
 
-### 6. QuickSuite Chat Agent 연동 (선택사항)
+### 10. QuickSuite Chat Agent 연동 (선택사항)
 - **대화형 인터페이스**: 자연어로 리뷰 데이터 조회
 - **MCP 프로토콜**: 8개의 전문 도구를 통한 데이터 접근
   - 리뷰 요청 목록 및 상세 조회
@@ -690,10 +734,11 @@ npm run build
 각 Pillar 에이전트는 동일한 문서 내용을 받지만, Pillar별 System Prompt에 따라 다른 관점으로 분석합니다.
 
 **입력 데이터** (모든 Pillar 공통):
-- **Document Content**: Textract 텍스트 + Vision 다이어그램 분석
+- **Document Content**: Nova Lite가 추출한 PDF 전체 텍스트 + Vision 다이어그램 분석 결과
 - **Images**: 아키텍처 다이어그램 PNG (환경 변수로 제어)
 - **System Prompt**: Pillar별 전문 프롬프트
 - **Additional Instructions**: 사용자 지정 지시사항
+- **Language**: 분석 결과 언어 (ko/en)
 
 **Pillar별 차이점**:
 - ✅ System Prompt (각 Pillar의 전문 영역)
@@ -708,14 +753,22 @@ npm run build
 ### Vision 모델 설정
 
 **아키텍처 분석 탭**에서 설정:
-- **모델 선택**: 7개 모델 중 선택
-  - Amazon Nova Lite/2/Pro
+- **모델 선택**: 8개 모델 중 선택
+  - Amazon Nova Lite/2 Lite/Pro
   - Mistral Pixtral Large
   - Claude Sonnet 3.5/4.5
   - Claude Opus 4.5
+  - Qwen3 VL 235B
 - **Max Tokens**: 1024-16384 (기본 8192)
 - **Temperature**: 0.0-1.0 (기본 0.3)
 - **프롬프트**: 분석 지시사항 커스터마이징
+
+### Pillar 검토 모델 설정
+
+**Pillar 검토 모델 탭**에서 설정:
+- Vision 모델과 별도로 6개 Pillar 검토 + Executive Summary 생성에 사용되는 모델 선택
+- **모델 선택**: Claude Sonnet 3.5 v2 (기본), Claude Sonnet 4.5, Claude Opus 4.5, Nova Lite, Nova Pro
+- Converse API 사용으로 모든 모델에서 동일한 인터페이스
 
 **모델 선택 기준**:
 - **Nova Lite/2**: 빠르고 저렴, 일반 문서 (77초, $0.144)

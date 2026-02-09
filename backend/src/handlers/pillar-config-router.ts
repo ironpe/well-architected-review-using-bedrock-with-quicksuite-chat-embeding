@@ -10,6 +10,8 @@ import {
   getPillarHistoryHandler,
   getNovaVisionHandler,
   updateNovaVisionHandler,
+  getPillarReviewModelHandler,
+  updatePillarReviewModelHandler,
 } from './pillar-config.js';
 
 export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayProxyResult> {
@@ -27,6 +29,16 @@ export async function handler(event: APIGatewayProxyEvent): Promise<APIGatewayPr
     // PUT /agents/nova-vision
     if (method === 'PUT' && path.endsWith('/nova-vision')) {
       return await updateNovaVisionHandler(event);
+    }
+
+    // GET /agents/review-model
+    if (method === 'GET' && path.endsWith('/review-model')) {
+      return await getPillarReviewModelHandler(event);
+    }
+
+    // PUT /agents/review-model
+    if (method === 'PUT' && path.endsWith('/review-model')) {
+      return await updatePillarReviewModelHandler(event);
     }
 
     // GET /agents/pillars - Get all pillars

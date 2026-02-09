@@ -25,6 +25,7 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { ReviewStatus, ReviewRequest } from '../types';
 import { api } from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export function DashboardPage() {
   const [reviews, setReviews] = useState<ReviewRequest[]>([]);
@@ -40,6 +41,7 @@ export function DashboardPage() {
   const [statusFilter, setStatusFilter] = useState<ReviewStatus | 'All'>('All');
   const [reviewCounts, setReviewCounts] = useState<Record<string, number>>({});
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     loadReviews();
@@ -92,15 +94,15 @@ export function DashboardPage() {
   const getStatusLabel = (status: ReviewStatus): string => {
     switch (status) {
       case 'Pending Review':
-        return '검토 대기 중';
+        return t('status.pendingReview');
       case 'In Review':
-        return '검토 중';
+        return t('status.inReview');
       case 'Modification Required':
-        return '수정 필요';
+        return t('status.modificationRequired');
       case 'Review Completed':
-        return '검토 완료';
+        return t('status.reviewCompleted');
       case 'Rejected':
-        return '반려됨';
+        return t('status.rejected');
       default:
         return status;
     }
@@ -164,7 +166,7 @@ export function DashboardPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('ko-KR');
+    return new Date(dateString).toLocaleString(language === 'ko' ? 'ko-KR' : 'en-US');
   };
 
   // 필터링된 검토 요청
@@ -180,7 +182,7 @@ export function DashboardPage() {
   return (
     <Box>
       <Typography variant="h4" gutterBottom fontWeight={700} sx={{ mb: 3 }}>
-        아키텍처 리뷰 대시보드
+        {t('dashboard.pageTitle')}
       </Typography>
 
       {error && (
@@ -193,8 +195,8 @@ export function DashboardPage() {
       <Paper sx={{ p: 2, mb: 3 }}>
         <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
           <TextField
-            label="검색"
-            placeholder="문서 제목, 제출자, 요청 ID"
+            label={t('common.search')}
+            placeholder={t('dashboard.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             size="small"
@@ -202,18 +204,18 @@ export function DashboardPage() {
           />
 
           <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>상태 필터</InputLabel>
+            <InputLabel>{t('history.statusFilter')}</InputLabel>
             <Select
               value={statusFilter}
-              label="상태 필터"
+              label={t('history.statusFilter')}
               onChange={(e) => setStatusFilter(e.target.value as ReviewStatus | 'All')}
             >
-              <MenuItem value="All">전체</MenuItem>
-              <MenuItem value="Pending Review">검토 대기 중</MenuItem>
-              <MenuItem value="In Review">검토 중</MenuItem>
-              <MenuItem value="Modification Required">수정 필요</MenuItem>
-              <MenuItem value="Review Completed">검토 완료</MenuItem>
-              <MenuItem value="Rejected">반려됨</MenuItem>
+              <MenuItem value="All">{t('history.all')}</MenuItem>
+              <MenuItem value="Pending Review">{t('status.pendingReview')}</MenuItem>
+              <MenuItem value="In Review">{t('status.inReview')}</MenuItem>
+              <MenuItem value="Modification Required">{t('status.modificationRequired')}</MenuItem>
+              <MenuItem value="Review Completed">{t('status.reviewCompleted')}</MenuItem>
+              <MenuItem value="Rejected">{t('status.rejected')}</MenuItem>
             </Select>
           </FormControl>
         </Box>
@@ -222,23 +224,23 @@ export function DashboardPage() {
       {/* 통계 요약 */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Typography variant="h6" gutterBottom>
-          전체 검토 요청: {reviews.length}개 {searchTerm || statusFilter !== 'All' ? `(필터링: ${filteredReviews.length}개)` : ''}
+          {t('dashboard.totalRequests')}: {reviews.length}{language === 'ko' ? '개' : ''} {searchTerm || statusFilter !== 'All' ? `(${t('dashboard.filtered')}: ${filteredReviews.length}${language === 'ko' ? '개' : ''})` : ''}
         </Typography>
         <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
           <Chip 
-            label={`대기 중: ${reviews.filter(r => r.status === 'Pending Review').length}개`} 
+            label={`${t('dashboard.waiting')}: ${reviews.filter(r => r.status === 'Pending Review').length}${language === 'ko' ? '개' : ''}`} 
             color="warning" 
             size="small"
             sx={{ borderRadius: '4px' }}
           />
           <Chip 
-            label={`검토 중: ${reviews.filter(r => r.status === 'In Review').length}개`} 
+            label={`${t('dashboard.reviewing')}: ${reviews.filter(r => r.status === 'In Review').length}${language === 'ko' ? '개' : ''}`} 
             color="info" 
             size="small"
             sx={{ borderRadius: '4px' }}
           />
           <Chip 
-            label={`완료: ${reviews.filter(r => r.status === 'Review Completed').length}개`} 
+            label={`${t('dashboard.completed')}: ${reviews.filter(r => r.status === 'Review Completed').length}${language === 'ko' ? '개' : ''}`} 
             color="success" 
             size="small"
             sx={{ borderRadius: '4px' }}
@@ -273,26 +275,26 @@ export function DashboardPage() {
 
                     <Box sx={{ textAlign: 'left' }}>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
-                        <strong>제출자:</strong> {review.submitterEmail}
+                        <strong>{t('dashboard.submitter')}:</strong> {review.submitterEmail}
                       </Typography>
                       <Typography variant="body2" color="text.secondary" gutterBottom>
-                        <strong>문서 버전:</strong> v{review.currentVersion}
+                        <strong>{t('dashboard.documentVersion')}:</strong> v{review.currentVersion}
                       </Typography>
                       {reviewCounts[review.reviewRequestId] > 0 && (
                         <Typography variant="body2" color="text.secondary" gutterBottom>
-                          <strong>검토 횟수:</strong> {reviewCounts[review.reviewRequestId]}회
+                          <strong>{t('dashboard.reviewCount')}:</strong> {reviewCounts[review.reviewRequestId]}{language === 'ko' ? '회' : ''}
                         </Typography>
                       )}
                       <Typography variant="body2" color="text.secondary" gutterBottom>
-                        <strong>요청일:</strong> {formatDate(review.createdAt)}
+                        <strong>{t('dashboard.requestDate')}:</strong> {formatDate(review.createdAt)}
                       </Typography>
                       {review.executionId && (
                         <Typography variant="body2" color="text.secondary" gutterBottom>
-                          <strong>최근 검토:</strong> {formatDate(review.updatedAt)}
+                          <strong>{t('dashboard.lastReview')}:</strong> {formatDate(review.updatedAt)}
                         </Typography>
                       )}
                       <Typography variant="body2" color="text.secondary">
-                        <strong>ID:</strong> {review.reviewRequestId}
+                        <strong>{t('dashboard.id')}:</strong> {review.reviewRequestId}
                       </Typography>
                     </Box>
                   </CardContent>
@@ -304,7 +306,7 @@ export function DashboardPage() {
                       variant="outlined"
                       onClick={() => handlePreview(review)}
                     >
-                      문서 미리보기
+                      {t('dashboard.documentPreview')}
                     </Button>
                     
                     {/* 상세보기 버튼 - 검토 완료된 경우 */}
@@ -314,7 +316,7 @@ export function DashboardPage() {
                         variant="outlined"
                         onClick={() => navigate(`/reviews/${review.executionId}/results`)}
                       >
-                        상세보기
+                        {t('dashboard.viewDetails')}
                       </Button>
                     )}
                     
@@ -325,7 +327,7 @@ export function DashboardPage() {
                         color="error"
                         onClick={() => handleRejectClick(review)}
                       >
-                        반려
+                        {t('dashboard.reject')}
                       </Button>
                     )}
                     
@@ -338,7 +340,7 @@ export function DashboardPage() {
                           state: { documentTitle: review.documentTitle || review.documentId }
                         })}
                       >
-                        재검토
+                        {t('dashboard.reReview')}
                       </Button>
                     ) : (
                       /* 검토 시작 버튼 - 대기 중인 경우 */
@@ -349,7 +351,7 @@ export function DashboardPage() {
                           state: { documentTitle: review.documentTitle || review.documentId }
                         })}
                       >
-                        검토 시작
+                        {t('dashboard.startReview')}
                       </Button>
                     )}
                   </CardActions>
@@ -362,8 +364,8 @@ export function DashboardPage() {
             <Paper sx={{ p: 4, textAlign: 'center' }}>
               <Typography color="text.secondary">
                 {searchTerm || statusFilter !== 'All' 
-                  ? '검색 결과가 없습니다.' 
-                  : '현재 대기 중인 검토 요청이 없습니다.'}
+                  ? t('dashboard.noResults')
+                  : t('dashboard.noPendingRequests')}
               </Typography>
             </Paper>
           )}
@@ -372,25 +374,25 @@ export function DashboardPage() {
 
       {/* Rejection Dialog */}
       <Dialog open={rejectDialogOpen} onClose={() => setRejectDialogOpen(false)} maxWidth="sm" fullWidth>
-        <DialogTitle>검토 요청 반려</DialogTitle>
+        <DialogTitle>{t('dashboard.rejectTitle')}</DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-            반려 사유를 입력해주세요. 이 내용은 요청자에게 전달됩니다.
+            {t('dashboard.rejectDescription')}
           </Typography>
           <TextField
             fullWidth
             multiline
             rows={4}
-            label="반려 사유"
+            label={t('dashboard.rejectReason')}
             value={rejectionReason}
             onChange={(e) => setRejectionReason(e.target.value)}
-            placeholder="예: 아키텍처 설계가 불충분합니다. 보안 요구사항을 추가해주세요."
+            placeholder={t('dashboard.rejectPlaceholder')}
             required
           />
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setRejectDialogOpen(false)} disabled={submitting}>
-            취소
+            {t('common.cancel')}
           </Button>
           <Button
             onClick={handleRejectConfirm}
@@ -398,7 +400,7 @@ export function DashboardPage() {
             color="error"
             disabled={submitting || !rejectionReason.trim()}
           >
-            {submitting ? '처리 중...' : '반려 확정'}
+            {submitting ? t('dashboard.processing') : t('dashboard.rejectConfirm')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -410,7 +412,7 @@ export function DashboardPage() {
         maxWidth="lg"
         fullWidth
       >
-        <DialogTitle>문서 미리보기</DialogTitle>
+        <DialogTitle>{t('dashboard.documentPreview')}</DialogTitle>
         <DialogContent>
           <Box sx={{ height: '70vh', width: '100%' }}>
             <iframe
@@ -421,7 +423,7 @@ export function DashboardPage() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPreviewOpen(false)}>닫기</Button>
+          <Button onClick={() => setPreviewOpen(false)}>{t('common.close')}</Button>
         </DialogActions>
       </Dialog>
     </Box>

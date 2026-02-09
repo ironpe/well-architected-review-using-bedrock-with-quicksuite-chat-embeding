@@ -125,6 +125,9 @@ export function reviewExecutionRecordToDomain(record: ReviewExecutionRecord): Re
     reportS3Key: record.reportS3Key,
     visionSummary: record.visionSummary,
     executiveSummary: record.executiveSummary,
+    language: record.language,
+    costBreakdown: record.costBreakdown,
+    governanceAnalysis: record.governanceAnalysis,
   };
 }
 

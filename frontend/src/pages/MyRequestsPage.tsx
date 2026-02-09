@@ -24,6 +24,7 @@ import { Visibility as ViewIcon, GetApp as DownloadIcon, Delete as DeleteIcon, D
 import { useNavigate } from 'react-router-dom';
 import { ReviewStatus, ReviewRequest } from '../types';
 import { api } from '../services/api';
+import { useLanguage } from '../contexts/LanguageContext';
 
 export function MyRequestsPage() {
   const [requests, setRequests] = useState<ReviewRequest[]>([]);
@@ -36,6 +37,7 @@ export function MyRequestsPage() {
   const [previewUrl, setPreviewUrl] = useState('');
   const [downloading, setDownloading] = useState<string | null>(null);
   const navigate = useNavigate();
+  const { t, language } = useLanguage();
 
   useEffect(() => {
     loadRequests();
@@ -75,15 +77,15 @@ export function MyRequestsPage() {
   const getStatusLabel = (status: ReviewStatus): string => {
     switch (status) {
       case 'Pending Review':
-        return '검토 대기 중';
+        return t('status.pendingReview');
       case 'In Review':
-        return '검토 중';
+        return t('status.inReview');
       case 'Modification Required':
-        return '수정 필요';
+        return t('status.modificationRequired');
       case 'Review Completed':
-        return '검토 완료';
+        return t('status.reviewCompleted');
       case 'Rejected':
-        return '반려됨';
+        return t('status.rejected');
       default:
         return status;
     }
@@ -107,7 +109,7 @@ export function MyRequestsPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('ko-KR');
+    return new Date(dateString).toLocaleString(language === 'ko' ? 'ko-KR' : 'en-US');
   };
 
   const handleDeleteClick = (request: ReviewRequest) => {
@@ -174,7 +176,7 @@ export function MyRequestsPage() {
   return (
     <Box>
       <Typography variant="h4" gutterBottom fontWeight={700} sx={{ mb: 3 }}>
-        아키텍처 리뷰 요청 목록
+        {t('myRequests.pageTitle')}
       </Typography>
 
       {error && (
@@ -193,13 +195,13 @@ export function MyRequestsPage() {
             <Table>
               <TableHead>
                 <TableRow>
-                  <TableCell>문서 제목</TableCell>
-                  <TableCell>검토자</TableCell>
-                  <TableCell>상태</TableCell>
-                  <TableCell>버전</TableCell>
-                  <TableCell>생성일</TableCell>
-                  <TableCell>업데이트</TableCell>
-                  <TableCell align="center">작업</TableCell>
+                  <TableCell>{t('myRequests.documentTitle')}</TableCell>
+                  <TableCell>{t('myRequests.reviewer')}</TableCell>
+                  <TableCell>{t('myRequests.status')}</TableCell>
+                  <TableCell>{t('myRequests.version')}</TableCell>
+                  <TableCell>{t('myRequests.createdAt')}</TableCell>
+                  <TableCell>{t('myRequests.update')}</TableCell>
+                  <TableCell align="center">{t('myRequests.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -211,7 +213,7 @@ export function MyRequestsPage() {
                       </Typography>
                       {request.status === 'Rejected' && request.rejectionReason && (
                         <Typography variant="caption" color="error" sx={{ display: 'block', mt: 0.5 }}>
-                          반려 사유: {request.rejectionReason}
+                          {t('myRequests.rejectionReason')}: {request.rejectionReason}
                         </Typography>
                       )}
                     </TableCell>
@@ -229,7 +231,7 @@ export function MyRequestsPage() {
                     <TableCell>{formatDate(request.updatedAt)}</TableCell>
                     <TableCell align="center">
                       <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                        <Tooltip title="문서 미리보기">
+                        <Tooltip title={t('myRequests.documentPreview')}>
                           <IconButton
                             size="small"
                             color="info"
@@ -239,7 +241,7 @@ export function MyRequestsPage() {
                           </IconButton>
                         </Tooltip>
                         {request.status === 'Review Completed' && (
-                          <Tooltip title="검토 결과 보기">
+                          <Tooltip title={t('myRequests.viewResults')}>
                             <span>
                               <IconButton
                                 size="small"
@@ -253,7 +255,7 @@ export function MyRequestsPage() {
                           </Tooltip>
                         )}
                         {request.status === 'Review Completed' && (
-                          <Tooltip title="리포트 다운로드">
+                          <Tooltip title={t('myRequests.downloadReport')}>
                             <span>
                               <IconButton 
                                 size="small" 
@@ -271,10 +273,10 @@ export function MyRequestsPage() {
                           </Tooltip>
                         )}
                         <Tooltip title={
-                          request.status === 'Pending Review' ? '삭제' :
-                          request.status === 'In Review' ? '검토 중일 때는 삭제 불가' :
-                          request.status === 'Review Completed' ? '검토 완료된 항목은 삭제 불가' :
-                          '삭제'
+                          request.status === 'Pending Review' ? t('myRequests.deleteTooltip') :
+                          request.status === 'In Review' ? t('myRequests.cannotDeleteInReview') :
+                          request.status === 'Review Completed' ? t('myRequests.cannotDeleteCompleted') :
+                          t('myRequests.deleteTooltip')
                         }>
                           <span>
                             <IconButton
@@ -298,14 +300,14 @@ export function MyRequestsPage() {
           {requests.length === 0 && (
             <Box sx={{ p: 4, textAlign: 'center' }}>
               <Typography color="text.secondary">
-                아직 검토 요청이 없습니다. 문서를 업로드하여 검토를 요청하세요.
+                {t('myRequests.noRequestsMessage')}
               </Typography>
               <Button
                 variant="contained"
                 sx={{ mt: 2 }}
                 onClick={() => navigate('/upload')}
               >
-                문서 업로드하기
+                {t('myRequests.uploadDocument')}
               </Button>
             </Box>
           )}
@@ -317,18 +319,18 @@ export function MyRequestsPage() {
         open={deleteConfirmOpen}
         onClose={() => !deleting && setDeleteConfirmOpen(false)}
       >
-        <DialogTitle>검토 요청 삭제</DialogTitle>
+        <DialogTitle>{t('myRequests.deleteTitle')}</DialogTitle>
         <DialogContent>
           <Typography>
-            "{deleteTarget?.documentTitle || deleteTarget?.documentId}"를 삭제하시겠습니까?
+            "{deleteTarget?.documentTitle || deleteTarget?.documentId}" {t('myRequests.deleteConfirm')}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            업로드된 문서와 관련 데이터가 모두 삭제됩니다. 이 작업은 되돌릴 수 없습니다.
+            {t('myRequests.deleteWarning')}
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteConfirmOpen(false)} disabled={deleting}>
-            취소
+            {t('common.cancel')}
           </Button>
           <Button 
             onClick={handleDeleteConfirm} 
@@ -336,7 +338,7 @@ export function MyRequestsPage() {
             variant="contained"
             disabled={deleting}
           >
-            {deleting ? '삭제 중...' : '삭제'}
+            {deleting ? t('myRequests.deleting') : t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>
@@ -348,7 +350,7 @@ export function MyRequestsPage() {
         maxWidth="lg"
         fullWidth
       >
-        <DialogTitle>문서 미리보기</DialogTitle>
+        <DialogTitle>{t('myRequests.documentPreview')}</DialogTitle>
         <DialogContent>
           <Box sx={{ height: '70vh', width: '100%' }}>
             <iframe
@@ -359,7 +361,7 @@ export function MyRequestsPage() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPreviewOpen(false)}>닫기</Button>
+          <Button onClick={() => setPreviewOpen(false)}>{t('common.close')}</Button>
         </DialogActions>
       </Dialog>
     </Box>

@@ -38,6 +38,7 @@ import { useNavigate } from 'react-router-dom';
 import { ReviewStatus, ReviewRequest } from '../types';
 import { api } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
+import { useLanguage } from '../contexts/LanguageContext';
 
 const mockHistory = [
   {
@@ -87,6 +88,7 @@ export function HistoryPage() {
   const [executionHistory, setExecutionHistory] = useState<Record<string, any[]>>({});
   const [loadingExecutions, setLoadingExecutions] = useState<Set<string>>(new Set());
   const { user } = useAuth();
+  const { t, language } = useLanguage();
   
   // Requester_Group 사용자인지 확인
   const isRequester = user?.group === 'Requester_Group';
@@ -119,15 +121,15 @@ export function HistoryPage() {
   const getStatusLabel = (status: ReviewStatus): string => {
     switch (status) {
       case 'Pending Review':
-        return '검토 대기 중';
+        return t('status.pendingReview');
       case 'In Review':
-        return '검토 중';
+        return t('status.inReview');
       case 'Modification Required':
-        return '수정 필요';
+        return t('status.modificationRequired');
       case 'Review Completed':
-        return '검토 완료';
+        return t('status.reviewCompleted');
       case 'Rejected':
-        return '반려됨';
+        return t('status.rejected');
       default:
         return status;
     }
@@ -299,7 +301,7 @@ export function HistoryPage() {
   };
 
   const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleString('ko-KR');
+    return new Date(dateString).toLocaleString(language === 'ko' ? 'ko-KR' : 'en-US');
   };
 
   const filteredHistory = history.filter(item => {
@@ -315,7 +317,7 @@ export function HistoryPage() {
   return (
     <Box>
       <Typography variant="h4" gutterBottom fontWeight={700} sx={{ mb: 3 }}>
-        아키텍처 리뷰 히스토리
+        {t('history.pageTitle')}
       </Typography>
 
       {error && (
@@ -327,8 +329,8 @@ export function HistoryPage() {
       <Paper sx={{ p: 2, mb: 3 }}>
         <Box sx={{ display: 'flex', gap: 2 }}>
           <TextField
-            label="검색"
-            placeholder="문서 제목 또는 제출자"
+            label={t('common.search')}
+            placeholder={t('history.searchPlaceholder')}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             size="small"
@@ -336,18 +338,18 @@ export function HistoryPage() {
           />
 
           <FormControl size="small" sx={{ minWidth: 200 }}>
-            <InputLabel>상태 필터</InputLabel>
+            <InputLabel>{t('history.statusFilter')}</InputLabel>
             <Select
               value={statusFilter}
-              label="상태 필터"
+              label={t('history.statusFilter')}
               onChange={(e) => setStatusFilter(e.target.value as ReviewStatus | 'All')}
             >
-              <MenuItem value="All">전체</MenuItem>
-              <MenuItem value="Pending Review">검토 대기 중</MenuItem>
-              <MenuItem value="In Review">검토 중</MenuItem>
-              <MenuItem value="Modification Required">수정 필요</MenuItem>
-              <MenuItem value="Review Completed">검토 완료</MenuItem>
-              <MenuItem value="Rejected">반려됨</MenuItem>
+              <MenuItem value="All">{t('history.all')}</MenuItem>
+              <MenuItem value="Pending Review">{t('status.pendingReview')}</MenuItem>
+              <MenuItem value="In Review">{t('status.inReview')}</MenuItem>
+              <MenuItem value="Modification Required">{t('status.modificationRequired')}</MenuItem>
+              <MenuItem value="Review Completed">{t('status.reviewCompleted')}</MenuItem>
+              <MenuItem value="Rejected">{t('status.rejected')}</MenuItem>
             </Select>
           </FormControl>
         </Box>
@@ -364,15 +366,15 @@ export function HistoryPage() {
               <TableHead>
 <TableRow>
                   <TableCell width="40px" />
-                  <TableCell width="18%">문서 제목</TableCell>
-                  <TableCell width="14%">제출자</TableCell>
-                  <TableCell width="14%">검토자</TableCell>
-                  <TableCell width="8%">상태</TableCell>
-                  <TableCell width="7%" sx={{ whiteSpace: 'nowrap' }}>문서 버전</TableCell>
-                  <TableCell width="7%" sx={{ whiteSpace: 'nowrap' }}>검토 횟수</TableCell>
-                  <TableCell width="11%">생성일</TableCell>
-                  <TableCell width="11%" sx={{ whiteSpace: 'nowrap' }}>최종 검토일</TableCell>
-                  <TableCell align="center" width="10%">작업</TableCell>
+                  <TableCell width="18%">{t('history.documentName')}</TableCell>
+                  <TableCell width="14%">{t('history.submitter')}</TableCell>
+                  <TableCell width="14%">{t('history.reviewer')}</TableCell>
+                  <TableCell width="8%">{t('myRequests.status')}</TableCell>
+                  <TableCell width="7%" sx={{ whiteSpace: 'nowrap' }}>{t('history.documentVersion')}</TableCell>
+                  <TableCell width="7%" sx={{ whiteSpace: 'nowrap' }}>{t('history.reviewCount')}</TableCell>
+                  <TableCell width="11%">{t('myRequests.createdAt')}</TableCell>
+                  <TableCell width="11%" sx={{ whiteSpace: 'nowrap' }}>{t('history.lastReviewDate')}</TableCell>
+                  <TableCell align="center" width="10%">{t('myRequests.actions')}</TableCell>
                 </TableRow>
               </TableHead>
               <TableBody>
@@ -405,14 +407,14 @@ export function HistoryPage() {
                       <TableCell>v{item.currentVersion}</TableCell>
                       <TableCell>
                         {executionHistory[item.reviewRequestId] 
-                          ? `${executionHistory[item.reviewRequestId].length}회`
+                          ? `${executionHistory[item.reviewRequestId].length}${language === 'ko' ? '회' : ''}`
                           : '-'}
                       </TableCell>
                       <TableCell>{formatDate(item.createdAt)}</TableCell>
                       <TableCell>{formatDate(item.updatedAt)}</TableCell>
                       <TableCell align="center">
                         <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
-                          <Tooltip title="문서 미리보기">
+                          <Tooltip title={t('myRequests.documentPreview')}>
                             <IconButton 
                               size="small" 
                               color="info"
@@ -422,7 +424,7 @@ export function HistoryPage() {
                             </IconButton>
                           </Tooltip>
                           {item.status === 'Review Completed' && (
-                            <Tooltip title="검토 결과 보기">
+                            <Tooltip title={t('myRequests.viewResults')}>
                               <span>
                                 <IconButton 
                                   size="small" 
@@ -436,7 +438,7 @@ export function HistoryPage() {
                             </Tooltip>
                           )}
                           {item.status === 'Review Completed' && (
-                            <Tooltip title="리포트 다운로드">
+                            <Tooltip title={t('myRequests.downloadReport')}>
                               <span>
                                 <IconButton 
                                   size="small" 
@@ -454,10 +456,10 @@ export function HistoryPage() {
                             </Tooltip>
                           )}
                           <Tooltip title={
-                            item.status === 'Pending Review' ? '삭제' :
-                            item.status === 'In Review' ? '검토 중일 때는 삭제 불가' :
-                            item.status === 'Review Completed' ? '검토 완료된 항목은 삭제 불가' :
-                            '삭제'
+                            item.status === 'Pending Review' ? t('myRequests.deleteTooltip') :
+                            item.status === 'In Review' ? t('myRequests.cannotDeleteInReview') :
+                            item.status === 'Review Completed' ? t('myRequests.cannotDeleteCompleted') :
+                            t('myRequests.deleteTooltip')
                           }>
                             <span>
                               <IconButton 
@@ -480,7 +482,7 @@ export function HistoryPage() {
                         <Collapse in={expandedRows.has(item.reviewRequestId)} timeout="auto" unmountOnExit>
                           <Box sx={{ margin: 2 }}>
                             <Typography variant="h6" gutterBottom component="div">
-                              검토 이력
+                              {t('history.reviewHistory')}
                             </Typography>
                             {loadingExecutions.has(item.reviewRequestId) ? (
                               <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
@@ -490,12 +492,12 @@ export function HistoryPage() {
                               <Table size="small">
                                 <TableHead>
                                   <TableRow>
-                                    <TableCell>검토 번호</TableCell>
-                                    <TableCell>상태</TableCell>
-                                    <TableCell>시작 시간</TableCell>
-                                    <TableCell>완료 시간</TableCell>
-                                    <TableCell>선택된 Pillar</TableCell>
-                                    <TableCell align="center">작업</TableCell>
+                                    <TableCell>{t('history.reviewNumber')}</TableCell>
+                                    <TableCell>{t('myRequests.status')}</TableCell>
+                                    <TableCell>{t('history.startTime')}</TableCell>
+                                    <TableCell>{t('history.completionTime')}</TableCell>
+                                    <TableCell>{t('history.selectedPillars')}</TableCell>
+                                    <TableCell align="center">{t('myRequests.actions')}</TableCell>
                                   </TableRow>
                                 </TableHead>
                                 <TableBody>
@@ -504,7 +506,7 @@ export function HistoryPage() {
                                       <TableCell>#{executionHistory[item.reviewRequestId].length - index}</TableCell>
                                       <TableCell>
                                         <Chip
-                                          label={execution.status === 'Completed' ? '완료' : execution.status === 'In Progress' ? '진행 중' : execution.status}
+                                          label={execution.status === 'Completed' ? t('status.completed') : execution.status === 'In Progress' ? t('status.inProgress') : execution.status}
                                           color={execution.status === 'Completed' ? 'success' : execution.status === 'In Progress' ? 'info' : 'default'}
                                           size="small"
                                           sx={{ borderRadius: '4px' }}
@@ -512,12 +514,12 @@ export function HistoryPage() {
                                       </TableCell>
                                       <TableCell>{formatDate(execution.startedAt)}</TableCell>
                                       <TableCell>{execution.completedAt ? formatDate(execution.completedAt) : '-'}</TableCell>
-                                      <TableCell>{execution.selectedPillars?.length || 0}개</TableCell>
+                                      <TableCell>{execution.selectedPillars?.length || 0}{language === 'ko' ? '개' : ''}</TableCell>
                                       <TableCell align="center">
                                         <Box sx={{ display: 'flex', gap: 0.5, justifyContent: 'center' }}>
                                           {execution.status === 'Completed' && (
                                             <>
-                                              <Tooltip title="결과 보기">
+                                              <Tooltip title={t('history.viewResults')}>
                                                 <IconButton
                                                   size="small"
                                                   color="primary"
@@ -526,7 +528,7 @@ export function HistoryPage() {
                                                   <ViewIcon />
                                                 </IconButton>
                                               </Tooltip>
-                                              <Tooltip title="다운로드">
+                                              <Tooltip title={t('history.download')}>
                                                 <IconButton
                                                   size="small"
                                                   color="success"
@@ -550,7 +552,7 @@ export function HistoryPage() {
                               </Table>
                             ) : (
                               <Typography variant="body2" color="text.secondary">
-                                검토 이력이 없습니다.
+                                {t('history.noHistory')}
                               </Typography>
                             )}
                           </Box>
@@ -566,7 +568,7 @@ export function HistoryPage() {
           {filteredHistory.length === 0 && (
             <Box sx={{ p: 4, textAlign: 'center' }}>
               <Typography color="text.secondary">
-                검색 결과가 없습니다.
+                {t('history.noSearchResults')}
               </Typography>
             </Box>
           )}
@@ -580,7 +582,7 @@ export function HistoryPage() {
         maxWidth="lg"
         fullWidth
       >
-        <DialogTitle>문서 프리뷰</DialogTitle>
+        <DialogTitle>{t('myRequests.documentPreview')}</DialogTitle>
         <DialogContent>
           <Box sx={{ height: '70vh', width: '100%' }}>
             <iframe
@@ -591,7 +593,7 @@ export function HistoryPage() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setPreviewOpen(false)}>닫기</Button>
+          <Button onClick={() => setPreviewOpen(false)}>{t('common.close')}</Button>
         </DialogActions>
       </Dialog>
 
@@ -600,18 +602,18 @@ export function HistoryPage() {
         open={deleteConfirmOpen}
         onClose={() => !deleting && setDeleteConfirmOpen(false)}
       >
-        <DialogTitle>검토 요청 삭제</DialogTitle>
+        <DialogTitle>{t('myRequests.deleteTitle')}</DialogTitle>
         <DialogContent>
           <Typography>
-            "{deleteTarget?.documentTitle || deleteTarget?.documentId}"를 삭제하시겠습니까?
+            "{deleteTarget?.documentTitle || deleteTarget?.documentId}" {t('myRequests.deleteConfirm')}
           </Typography>
           <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-            이 작업은 되돌릴 수 없습니다.
+            {t('history.deleteCannotUndo')}
           </Typography>
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setDeleteConfirmOpen(false)} disabled={deleting}>
-            취소
+            {t('common.cancel')}
           </Button>
           <Button 
             onClick={handleDeleteConfirm} 
@@ -619,7 +621,7 @@ export function HistoryPage() {
             variant="contained"
             disabled={deleting}
           >
-            {deleting ? '삭제 중...' : '삭제'}
+            {deleting ? t('myRequests.deleting') : t('common.delete')}
           </Button>
         </DialogActions>
       </Dialog>

@@ -177,6 +177,98 @@ export class PillarConfigurationService {
   }
 
   /**
+   * Get Pillar Review Model configuration
+   */
+  async getPillarReviewModelConfig(): Promise<{
+    modelId: string;
+  }> {
+    try {
+      const result = await this.dynamoClient.send(
+        new QueryCommand({
+          TableName: this.pillarConfigurationsTable,
+          KeyConditionExpression: 'PK = :pk',
+          FilterExpression: 'isActive = :active',
+          ExpressionAttributeValues: {
+            ':pk': 'CONFIG#REVIEW_MODEL',
+            ':active': true,
+          },
+          ScanIndexForward: false,
+          Limit: 1,
+        })
+      );
+
+      if (result.Items && result.Items.length > 0) {
+        const record = result.Items[0] as any;
+        return {
+          modelId: record.modelId || environment.bedrock.modelId,
+        };
+      }
+    } catch (error) {
+      console.warn('No Pillar Review Model config found, using default');
+    }
+
+    return {
+      modelId: environment.bedrock.modelId,
+    };
+  }
+
+  /**
+   * Update Pillar Review Model configuration
+   */
+  async updatePillarReviewModelConfig(
+    modelId: string,
+    createdBy: string
+  ): Promise<void> {
+    validateRequiredString(modelId, 'modelId');
+    validateRequiredString(createdBy, 'createdBy');
+
+    const timestamp = new Date().toISOString();
+
+    // Deactivate previous versions
+    const result = await this.dynamoClient.send(
+      new QueryCommand({
+        TableName: this.pillarConfigurationsTable,
+        KeyConditionExpression: 'PK = :pk',
+        ExpressionAttributeValues: {
+          ':pk': 'CONFIG#REVIEW_MODEL',
+        },
+      })
+    );
+
+    if (result.Items) {
+      for (const item of result.Items) {
+        if ((item as any).isActive) {
+          await this.dynamoClient.send(
+            new PutCommand({
+              TableName: this.pillarConfigurationsTable,
+              Item: {
+                ...item,
+                isActive: false,
+              },
+            })
+          );
+        }
+      }
+    }
+
+    // Create new version
+    await this.dynamoClient.send(
+      new PutCommand({
+        TableName: this.pillarConfigurationsTable,
+        Item: {
+          PK: 'CONFIG#REVIEW_MODEL',
+          SK: `VERSION#${timestamp}`,
+          pillarName: 'Review Model',
+          modelId,
+          createdBy,
+          createdAt: timestamp,
+          isActive: true,
+        },
+      })
+    );
+  }
+
+  /**
    * Get active configuration for a specific pillar
    * Requirements: 3.1
    */

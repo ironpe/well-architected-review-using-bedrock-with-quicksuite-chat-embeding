@@ -8,6 +8,7 @@ import {
   Assessment as AssessmentIcon,
 } from '@mui/icons-material';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useLanguage } from '../../contexts/LanguageContext';
 import { UserGroup } from '../../types';
 
 interface SidebarProps {
@@ -20,17 +21,18 @@ const drawerWidth = 220; // 240에서 220으로 축소
 export function Sidebar({ userGroup, open }: SidebarProps) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { t } = useLanguage();
 
   const aGroupMenuItems = [
-    { text: '문서 업로드', icon: <UploadIcon />, path: '/upload' },
-    { text: '내 검토 요청', icon: <AssessmentIcon />, path: '/my-requests' },
+    { text: t('nav.upload'), icon: <UploadIcon />, path: '/upload' },
+    { text: t('nav.myRequests'), icon: <AssessmentIcon />, path: '/my-requests' },
   ];
 
   const bGroupMenuItems = [
-    { text: '대시보드', icon: <DashboardIcon />, path: '/dashboard' },
-    { text: '히스토리', icon: <HistoryIcon />, path: '/history' },
-    { text: '에이전트 설정', icon: <SettingsIcon />, path: '/admin/agents' },
-    { text: '거버넌스 정책', icon: <PolicyIcon />, path: '/admin/policies' },
+    { text: t('nav.dashboard'), icon: <DashboardIcon />, path: '/dashboard' },
+    { text: t('nav.history'), icon: <HistoryIcon />, path: '/history' },
+    { text: t('nav.agentConfig'), icon: <SettingsIcon />, path: '/admin/agents' },
+    { text: t('nav.policyManagement'), icon: <PolicyIcon />, path: '/admin/policies' },
   ];
 
   const menuItems = userGroup === 'Requester_Group' ? aGroupMenuItems : userGroup === 'Reviewer_Group' ? bGroupMenuItems : [];

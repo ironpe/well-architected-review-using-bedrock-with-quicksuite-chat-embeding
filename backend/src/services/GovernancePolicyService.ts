@@ -3,9 +3,9 @@
  * Requirements: 2.1, 2.2
  */
 
-import { S3Client, PutObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand, DeleteObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb';
-import { DynamoDBDocumentClient, PutCommand, QueryCommand, DeleteCommand } from '@aws-sdk/lib-dynamodb';
+import { DynamoDBDocumentClient, PutCommand, QueryCommand, DeleteCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb';
 import { v4 as uuidv4 } from 'uuid';
 import { environment } from '../config/environment.js';
 import {
@@ -92,7 +92,7 @@ export class GovernancePolicyService {
   }
 
   /**
-   * Get all active governance policies
+   * Get all governance policies (both active and inactive)
    * Requirements: 2.2
    */
   async getAllPolicies(): Promise<GovernancePolicy[]> {
@@ -112,8 +112,133 @@ export class GovernancePolicyService {
     }
 
     return result.Items
-      .filter(item => (item as GovernancePolicyRecord).isActive)
       .map(item => governancePolicyRecordToDomain(item as GovernancePolicyRecord));
+  }
+
+  /**
+   * Get only active governance policies
+   */
+  async getActivePolicies(): Promise<GovernancePolicy[]> {
+    const all = await this.getAllPolicies();
+    return all.filter(p => p.isActive);
+  }
+
+  /**
+   * Toggle policy active/inactive
+   */
+  async togglePolicyActive(policyId: string, isActive: boolean): Promise<void> {
+    validateRequiredString(policyId, 'policyId');
+
+    await this.dynamoClient.send(
+      new UpdateCommand({
+        TableName: this.governancePoliciesTable,
+        Key: {
+          PK: 'POLICIES',
+          SK: `POLICY#${policyId}`,
+        },
+        UpdateExpression: 'SET isActive = :isActive',
+        ExpressionAttributeValues: {
+          ':isActive': isActive,
+        },
+        ConditionExpression: 'attribute_exists(PK)',
+      })
+    );
+  }
+
+  /**
+   * Get policy content from S3 (text extraction)
+   */
+  async getPolicyContent(policyId: string): Promise<string> {
+    validateRequiredString(policyId, 'policyId');
+
+    // Get policy metadata
+    const result = await this.dynamoClient.send(
+      new QueryCommand({
+        TableName: this.governancePoliciesTable,
+        KeyConditionExpression: 'PK = :pk AND SK = :sk',
+        ExpressionAttributeValues: {
+          ':pk': 'POLICIES',
+          ':sk': `POLICY#${policyId}`,
+        },
+        Limit: 1,
+      })
+    );
+
+    if (!result.Items || result.Items.length === 0) {
+      throw new NotFoundError(`Policy ${policyId} not found`);
+    }
+
+    const policy = result.Items[0] as GovernancePolicyRecord;
+
+    // Download from S3
+    const response = await this.s3Client.send(
+      new GetObjectCommand({
+        Bucket: policy.s3Bucket,
+        Key: policy.s3Key,
+      })
+    );
+
+    if (!response.Body) {
+      throw new Error('Empty policy document body from S3');
+    }
+
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of response.Body as any) {
+      chunks.push(chunk);
+    }
+    const buffer = Buffer.concat(chunks);
+
+    // For PDF files, return base64 (will be processed by Bedrock)
+    // For text files, return as string
+    if (policy.fileName.endsWith('.pdf')) {
+      return `[PDF Document: ${policy.title}]\nFile: ${policy.fileName}\nSize: ${(buffer.length / 1024).toFixed(1)} KB\nBase64 content available for AI analysis.`;
+    }
+
+    return buffer.toString('utf-8');
+  }
+
+  /**
+   * Get policy S3 buffer for Bedrock analysis
+   */
+  async getPolicyBuffer(policyId: string): Promise<{ buffer: Buffer; policy: GovernancePolicy }> {
+    validateRequiredString(policyId, 'policyId');
+
+    const result = await this.dynamoClient.send(
+      new QueryCommand({
+        TableName: this.governancePoliciesTable,
+        KeyConditionExpression: 'PK = :pk AND SK = :sk',
+        ExpressionAttributeValues: {
+          ':pk': 'POLICIES',
+          ':sk': `POLICY#${policyId}`,
+        },
+        Limit: 1,
+      })
+    );
+
+    if (!result.Items || result.Items.length === 0) {
+      throw new NotFoundError(`Policy ${policyId} not found`);
+    }
+
+    const record = result.Items[0] as GovernancePolicyRecord;
+    const policy = governancePolicyRecordToDomain(record);
+
+    const response = await this.s3Client.send(
+      new GetObjectCommand({
+        Bucket: record.s3Bucket,
+        Key: record.s3Key,
+      })
+    );
+
+    if (!response.Body) {
+      throw new Error('Empty policy document body from S3');
+    }
+
+    const chunks: Uint8Array[] = [];
+    for await (const chunk of response.Body as any) {
+      chunks.push(chunk);
+    }
+
+    return { buffer: Buffer.concat(chunks), policy };
   }
 
   /**

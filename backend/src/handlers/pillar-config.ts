@@ -183,3 +183,49 @@ export async function updateNovaVisionHandler(
     return handleError(error);
   }
 }
+
+/**
+ * GET /agents/review-model
+ * Get Pillar Review Model configuration
+ */
+export async function getPillarReviewModelHandler(
+  _event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
+  try {
+    const config = await pillarConfigService.getPillarReviewModelConfig();
+    return createResponse(200, config);
+  } catch (error) {
+    return handleError(error);
+  }
+}
+
+/**
+ * PUT /agents/review-model
+ * Update Pillar Review Model configuration
+ */
+export async function updatePillarReviewModelHandler(
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
+  try {
+    const authContext = await authMiddleware.authenticate(event);
+    authorizationService.requirePermission(authContext.userGroup, 'configure:agent');
+
+    const request = JSON.parse(event.body || '{}');
+
+    if (!request.modelId) {
+      throw new ValidationError('modelId is required');
+    }
+
+    await pillarConfigService.updatePillarReviewModelConfig(
+      request.modelId,
+      authContext.email
+    );
+
+    return createResponse(200, {
+      updated: true,
+      message: 'Pillar review model configuration updated',
+    });
+  } catch (error) {
+    return handleError(error);
+  }
+}

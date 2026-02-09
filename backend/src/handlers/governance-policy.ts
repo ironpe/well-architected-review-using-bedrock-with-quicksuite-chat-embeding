@@ -116,6 +116,34 @@ export async function deleteGovernancePolicyHandler(
 }
 
 /**
+ * PATCH /governance/policies/{policyId}/toggle
+ * Toggle policy active/inactive
+ */
+export async function toggleGovernancePolicyHandler(
+  event: APIGatewayProxyEvent
+): Promise<APIGatewayProxyResult> {
+  try {
+    const policyId = event.pathParameters?.policyId;
+    
+    if (!policyId) {
+      throw new ValidationError('policyId is required');
+    }
+
+    const body = JSON.parse(event.body || '{}');
+    if (typeof body.isActive !== 'boolean') {
+      throw new ValidationError('isActive (boolean) is required');
+    }
+
+    await governancePolicyService.togglePolicyActive(policyId, body.isActive);
+    
+    return createResponse(200, { message: 'Policy status updated', isActive: body.isActive });
+  } catch (error) {
+    console.error('Toggle governance policy error:', error);
+    return handleError(error);
+  }
+}
+
+/**
  * Router for governance policy endpoints
  */
 export async function handler(
@@ -139,6 +167,11 @@ export async function handler(
   // DELETE /governance/policies/{policyId}
   if (method === 'DELETE' && path.match(/\/governance\/policies\/[^/]+$/)) {
     return await deleteGovernancePolicyHandler(event);
+  }
+
+  // PATCH /governance/policies/{policyId}/toggle
+  if (method === 'PATCH' && path.match(/\/governance\/policies\/[^/]+\/toggle$/)) {
+    return await toggleGovernancePolicyHandler(event);
   }
 
   return createResponse(404, { error: 'Not found' });
