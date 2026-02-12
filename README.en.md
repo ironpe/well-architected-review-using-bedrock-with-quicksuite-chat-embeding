@@ -57,26 +57,26 @@ An AI system that automatically reviews architecture documents based on the 6 pi
 ```mermaid
 flowchart TB
     subgraph UI["👤 User Interface"]
-        Frontend["React Frontend<br/>(Vite + MUI)"]
-        ChatAgent["QuickSuite Chat Agent<br/>(MCP Action)"]
+        Frontend["React Frontend<br/>Vite + MUI"]
+        ChatAgent["QuickSuite Chat Agent<br/>MCP Action"]
     end
 
     subgraph Auth["🔐 Authentication"]
-        Cognito["Amazon Cognito<br/>• User Auth<br/>• M2M Client (OAuth2)"]
+        Cognito["Amazon Cognito<br/>• User Auth<br/>• M2M Client - OAuth2"]
         AGW["AgentCore Gateway<br/>• JWT Auth<br/>• MCP Protocol"]
     end
 
     subgraph Compute["⚡ Compute"]
-        APIGW["API Gateway (REST)"]
+        APIGW["API Gateway - REST"]
         
         subgraph Lambda["Lambda Functions"]
-            ReviewHandler["Review Request Handler<br/>• Create/Query reviews"]
-            ExecHandler["Review Execution Handler<br/>• AI Review (6 Pillars parallel)<br/>• Vision Analysis<br/>• Executive Summary"]
-            PDFConverter["PDF Converter (Python)<br/>• PyMuPDF Layer<br/>• PDF → PNG conversion"]
-            OtherHandlers["Pillar Config /<br/>Upload Handlers"]
+            ReviewHandler["Review Request Handler<br/>• Create and Query reviews"]
+            ExecHandler["Review Execution Handler<br/>• AI Review 6 Pillars parallel<br/>• Vision Analysis<br/>• Executive Summary"]
+            PDFConverter["PDF Converter - Python<br/>• PyMuPDF Layer<br/>• PDF to PNG conversion"]
+            OtherHandlers["Pillar Config<br/>Upload Handlers"]
         end
         
-        MCPLambda["MCP Lambda<br/>(AgentCore Target)<br/>• list_review_requests<br/>• get_review_request<br/>• list_documents<br/>• get_document<br/>• list_review_executions<br/>• get_review_execution<br/>• list_pillar_configs<br/>• list_governance_policies"]
+        MCPLambda["MCP Lambda<br/>AgentCore Target<br/>• list_review_requests<br/>• get_review_request<br/>• list_documents<br/>• get_document<br/>• list_review_executions<br/>• get_review_execution<br/>• list_pillar_configs<br/>• list_governance_policies"]
     end
 
     subgraph Prompts["📋 Prompt Configuration"]
@@ -86,13 +86,13 @@ flowchart TB
     end
 
     subgraph AI["🤖 Amazon Bedrock"]
-        Nova["Nova Lite<br/>(PDF Scan/Text Extraction/<br/>Vision Analysis)"]
-        Claude["Claude 3.5/4.5<br/>Sonnet/Opus<br/>(Pillar Review/Vision)"]
-        Other["Other Vision<br/>Models (optional)"]
+        Nova["Nova Lite<br/>PDF Scan, Text Extraction,<br/>Vision Analysis"]
+        Claude["Claude 3.5 and 4.5<br/>Sonnet, Opus<br/>Pillar Review, Vision"]
+        Other["Other Vision<br/>Models"]
     end
 
     subgraph Storage["💾 Data Storage"]
-        S3["Amazon S3<br/>• Documents Bucket (PDF originals)<br/>• Reports Bucket (reports)<br/>• Governance Policies Bucket"]
+        S3["Amazon S3<br/>• Documents Bucket<br/>• Reports Bucket<br/>• Governance Policies Bucket"]
         DDB["Amazon DynamoDB<br/>• ReviewRequests<br/>• Documents<br/>• ReviewExecutions<br/>• PillarConfigurations<br/>• GovernancePolicies"]
     end
 

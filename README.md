@@ -57,26 +57,26 @@ AWS Well-Architected Framework의 6개 Pillar를 기반으로 아키텍처 문�
 ```mermaid
 flowchart TB
     subgraph UI["👤 사용자 인터페이스"]
-        Frontend["React Frontend<br/>(Vite + MUI)"]
-        ChatAgent["QuickSuite Chat Agent<br/>(MCP Action)"]
+        Frontend["React Frontend<br/>Vite + MUI"]
+        ChatAgent["QuickSuite Chat Agent<br/>MCP Action"]
     end
 
     subgraph Auth["🔐 인증"]
-        Cognito["Amazon Cognito<br/>• 사용자 인증<br/>• M2M Client (OAuth2)"]
+        Cognito["Amazon Cognito<br/>• 사용자 인증<br/>• M2M Client - OAuth2"]
         AGW["AgentCore Gateway<br/>• JWT 인증<br/>• MCP 프로토콜 처리"]
     end
 
     subgraph Compute["⚡ 컴퓨팅"]
-        APIGW["API Gateway (REST)"]
+        APIGW["API Gateway - REST"]
         
         subgraph Lambda["Lambda Functions"]
-            ReviewHandler["Review Request Handler<br/>• 리뷰 요청 생성/조회"]
-            ExecHandler["Review Execution Handler<br/>• AI 리뷰 실행 (6 Pillar 병렬)<br/>• Vision 분석<br/>• Executive Summary 생성"]
-            PDFConverter["PDF Converter (Python)<br/>• PyMuPDF Layer<br/>• PDF → PNG 변환"]
-            OtherHandlers["Pillar Config /<br/>Upload Handlers"]
+            ReviewHandler["Review Request Handler<br/>• 리뷰 요청 생성 및 조회"]
+            ExecHandler["Review Execution Handler<br/>• AI 리뷰 실행 6 Pillar 병렬<br/>• Vision 분석<br/>• Executive Summary 생성"]
+            PDFConverter["PDF Converter - Python<br/>• PyMuPDF Layer<br/>• PDF to PNG 변환"]
+            OtherHandlers["Pillar Config<br/>Upload Handlers"]
         end
         
-        MCPLambda["MCP Lambda<br/>(AgentCore Target)<br/>• list_review_requests<br/>• get_review_request<br/>• list_documents<br/>• get_document<br/>• list_review_executions<br/>• get_review_execution<br/>• list_pillar_configs<br/>• list_governance_policies"]
+        MCPLambda["MCP Lambda<br/>AgentCore Target<br/>• list_review_requests<br/>• get_review_request<br/>• list_documents<br/>• get_document<br/>• list_review_executions<br/>• get_review_execution<br/>• list_pillar_configs<br/>• list_governance_policies"]
     end
 
     subgraph Prompts["📋 프롬프트 구성"]
@@ -86,13 +86,13 @@ flowchart TB
     end
 
     subgraph AI["🤖 Amazon Bedrock"]
-        Nova["Nova Lite<br/>(PDF 스캔/텍스트 추출/<br/>Vision 분석)"]
-        Claude["Claude 3.5/4.5<br/>Sonnet/Opus<br/>(Pillar 검토/Vision)"]
-        Other["기타 Vision<br/>모델 (선택)"]
+        Nova["Nova Lite<br/>PDF 스캔, 텍스트 추출,<br/>Vision 분석"]
+        Claude["Claude 3.5 및 4.5<br/>Sonnet, Opus<br/>Pillar 검토, Vision"]
+        Other["기타 Vision<br/>모델"]
     end
 
     subgraph Storage["💾 데이터 저장소"]
-        S3["Amazon S3<br/>• Documents Bucket (PDF 원본)<br/>• Reports Bucket (리포트)<br/>• Governance Policies Bucket"]
+        S3["Amazon S3<br/>• Documents Bucket<br/>• Reports Bucket<br/>• Governance Policies Bucket"]
         DDB["Amazon DynamoDB<br/>• ReviewRequests<br/>• Documents<br/>• ReviewExecutions<br/>• PillarConfigurations<br/>• GovernancePolicies"]
     end
 
